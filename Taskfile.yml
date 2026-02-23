@@ -1,0 +1,145 @@
+# ===========================================================================
+# Taskfile.yml — gcp-infra-archtf
+# ===========================================================================
+# Local automation for Terraform module development.
+# Requires: https://taskfile.dev
+# License: Apache License 2.0
+# ===========================================================================
+
+version: "3"
+
+vars:
+  MODULES_DIR: modules
+  TOOLS_DIR: tools
+
+tasks:
+  fmt:
+    desc: "Run terraform fmt recursively"
+    cmds:
+      - echo "🧹 Running terraform fmt..."
+      - terraform fmt -recursive -check -diff {{.MODULES_DIR}}/
+
+  validate:
+    desc: "Validate all Terraform modules"
+    cmds:
+      - |
+        echo "🔍 Running terraform validate..."
+        export TF_IN_AUTOMATION=true
+        for MODULE in . $(find {{.MODULES_DIR}} -mindepth 1 -maxdepth 1 -type d | sort); do
+          echo "Validating $MODULE"
+          terraform -chdir="$MODULE" init -backend=false -input=false >/dev/null
+          terraform -chdir="$MODULE" validate || exit 1
+        done
+
+  lint:
+    desc: "Run TFLint on all modules"
+    cmds:
+      - |
+        echo "🔧 Running TFLint..."
+        for MODULE in . $(find {{.MODULES_DIR}} -mindepth 1 -maxdepth 1 -type d | sort); do
+          if [ -n "$(find "$MODULE" -maxdepth 1 -name '*.tf')" ]; then
+            echo "Linting $MODULE"
+            (cd "$MODULE" && tflint --init >/dev/null && tflint) || exit 1
+          fi
+        done
+
+  security:
+    desc: "Run tfsec security scan with SARIF output"
+    cmds:
+      - |
+        echo "🔒 Running tfsec..."
+        tfsec {{.MODULES_DIR}}/ \
+          --config-file=tfsec.yaml \
+          --soft-fail \
+          --format=sarif \
+          --out=results.sarif || true
+        echo "📄 SARIF output: results.sarif"
+
+  test:
+    desc: "Run terraform test for ALL modules"
+    cmds:
+      - |
+        echo "🧪 Running terraform test (all modules)..."
+        export TF_IN_AUTOMATION=true
+        PASS=0; FAIL=0; SKIP=0
+        for MODULE in . $(find {{.MODULES_DIR}} -mindepth 1 -maxdepth 1 -type d | sort); do
+          if [ -d "$MODULE/tests" ]; then
+            echo "• Testing $MODULE"
+            terraform -chdir="$MODULE" init -backend=false -input=false >/dev/null
+            if terraform -chdir="$MODULE" test -no-color; then
+              PASS=$((PASS + 1))
+            else
+              FAIL=$((FAIL + 1))
+            fi
+          else
+            SKIP=$((SKIP + 1))
+          fi
+        done
+        echo ""
+        echo "📊 Results: ✅ $PASS passed, ❌ $FAIL failed, ⏭️ $SKIP skipped"
+        [ "$FAIL" -eq 0 ] || exit 1
+
+  test:changed:
+    desc: "Run terraform test only on CHANGED modules (for PR)"
+    cmds:
+      - |
+        echo "🧪 Running terraform test (changed modules)..."
+        export TF_IN_AUTOMATION=true
+        BASE_REF="${GITHUB_BASE_REF:-origin/main}"
+        git fetch origin >/dev/null 2>&1 || true
+        CHANGED=$(git diff --name-only "$BASE_REF"... | grep '^modules/' | cut -d/ -f1-2 | sort -u || true)
+        if [ -z "$CHANGED" ]; then
+          echo "No module changes."
+          exit 0
+        fi
+        for MODULE in $CHANGED; do
+          if [ -d "$MODULE/tests" ]; then
+            echo "• Testing $MODULE"
+            terraform -chdir="$MODULE" init -backend=false -input=false >/dev/null
+            terraform -chdir="$MODULE" test -no-color || exit 1
+          fi
+        done
+
+  setup-python:
+    desc: "Prepare Python venv for README tools"
+    cmds:
+      - |
+        if [ ! -d ".venv" ]; then
+          echo "🐍 Creating Python virtual environment..."
+          python3 -m venv .venv
+        fi
+        .venv/bin/pip install -q -r {{.TOOLS_DIR}}/requirements.txt
+
+  docs:
+    desc: "Generate READMEs for all modules using tfdoc.py"
+    deps: [setup-python]
+    cmds:
+      - |
+        echo "📘 Generating READMEs..."
+        . .venv/bin/activate
+        for MODULE in $(find {{.MODULES_DIR}} -mindepth 1 -maxdepth 1 -type d | sort); do
+          echo "Processing $MODULE"
+          .venv/bin/python3 {{.TOOLS_DIR}}/tfdoc.py "$MODULE"
+        done
+
+  validate-readme:
+    desc: "Validate READMEs"
+    deps: [setup-python]
+    cmds:
+      - .venv/bin/python3 {{.TOOLS_DIR}}/validate-readme.py {{.MODULES_DIR}}/
+
+  check:
+    desc: "Run all checks sequentially (fmt, validate, lint, security, test, readme)"
+    cmds:
+      - task: fmt
+      - task: validate
+      - task: lint
+      - task: security
+      - task: validate-readme
+      - task: test
+      - echo "✅ All checks completed successfully"
+
+  clean:
+    desc: "Clean up generated files"
+    cmds:
+      - rm -rf .venv publish_tmp .tflint.d results.sarif

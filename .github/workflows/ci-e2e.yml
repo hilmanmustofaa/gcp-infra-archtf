@@ -1,0 +1,215 @@
+# ===========================================================================
+# GitHub Actions CI/CD — Dynamic Matrix with WIF & SARIF
+# ===========================================================================
+# Repo: gcp-infra-archtf
+# License: Apache License 2.0
+# ===========================================================================
+
+name: "CI — Terraform E2E"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "modules/**"
+      - "tools/**"
+      - "Taskfile.yml"
+      - ".github/workflows/ci-e2e.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "modules/**"
+      - "tools/**"
+      - "Taskfile.yml"
+      - ".github/workflows/ci-e2e.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TF_IN_AUTOMATION: true
+  TERRAFORM_VERSION: "1.10.2"
+
+# ── Job 1: Discover modules and build dynamic matrix ──────────────────────
+jobs:
+  discover:
+    name: "🔍 Discover Modules"
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_modules: ${{ steps.set-matrix.outputs.has_modules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Module Matrix
+        id: set-matrix
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # On PR: only changed modules
+            BASE_REF="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            MODULES=$(git diff --name-only "$BASE_REF"...HEAD \
+              | grep '^modules/' \
+              | cut -d/ -f1-2 \
+              | sort -u \
+              | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          else
+            # On push to main: all modules
+            MODULES=$(find modules -mindepth 1 -maxdepth 1 -type d \
+              | sort \
+              | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          fi
+
+          if [ "$MODULES" = "[]" ] || [ -z "$MODULES" ]; then
+            echo "matrix={\"module\":[]}" >> $GITHUB_OUTPUT
+            echo "has_modules=false" >> $GITHUB_OUTPUT
+          else
+            echo "matrix={\"module\":$MODULES}" >> $GITHUB_OUTPUT
+            echo "has_modules=true" >> $GITHUB_OUTPUT
+          fi
+
+          echo "📦 Discovered modules: $MODULES"
+
+  # ── Job 2: Validate (parallel per module) ─────────────────────────────────
+  validate:
+    name: "✅ Validate — ${{ matrix.module }}"
+    needs: discover
+    if: needs.discover.outputs.has_modules == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        run: terraform -chdir="${{ matrix.module }}" init -backend=false -input=false
+
+      - name: Terraform Validate
+        run: terraform -chdir="${{ matrix.module }}" validate
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -diff "${{ matrix.module }}"
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: TFLint
+        run: |
+          cd "${{ matrix.module }}"
+          if ls *.tf 1>/dev/null 2>&1; then
+            tflint --init && tflint
+          fi
+
+  # ── Job 3: Security Scan with SARIF Upload ─────────────────────────────────
+  security-scan:
+    name: "🔒 Security — ${{ matrix.module }}"
+    needs: discover
+    if: needs.discover.outputs.has_modules == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: ${{ matrix.module }}
+          soft_fail: true
+          sarif_file: results.sarif
+          additional_args: --config-file=../../tfsec.yaml
+
+      - name: Upload SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: tfsec-${{ matrix.module }}
+
+  # ── Job 4: E2E Tests with WIF Auth ────────────────────────────────────────
+  e2e-test:
+    name: "🧪 E2E — ${{ matrix.module }}"
+    needs: [discover, validate]
+    if: needs.discover.outputs.has_modules == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write    # Required for WIF
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      # ── Workload Identity Federation (WIF) ──
+      - name: Authenticate to GCP via WIF
+        if: env.WIF_PROVIDER != ''
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+        env:
+          WIF_PROVIDER: ${{ vars.WIF_PROVIDER }}
+
+      - name: Terraform Init
+        run: terraform -chdir="${{ matrix.module }}" init -backend=false -input=false
+
+      - name: Terraform Test
+        id: test
+        run: |
+          if [ -d "${{ matrix.module }}/tests" ]; then
+            terraform -chdir="${{ matrix.module }}" test -no-color
+          else
+            echo "⏭️ No tests found for ${{ matrix.module }}"
+          fi
+
+      # ── Auto-Cleanup (always runs, even on failure) ──
+      - name: Cleanup — Terraform Destroy
+        if: always()
+        run: |
+          echo "🧹 Running cleanup for ${{ matrix.module }}..."
+          # Only destroy if state exists (apply-based tests)
+          if [ -f "${{ matrix.module }}/terraform.tfstate" ]; then
+            terraform -chdir="${{ matrix.module }}" destroy -auto-approve -input=false || true
+          else
+            echo "ℹ️ No state file — plan-only tests, no cleanup needed."
+          fi
+
+  # ── Job 5: Summary Gate ────────────────────────────────────────────────────
+  ci-gate:
+    name: "🏁 CI Gate"
+    needs: [validate, security-scan, e2e-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Results
+        run: |
+          if [ "${{ needs.validate.result }}" = "failure" ] || \
+             [ "${{ needs.e2e-test.result }}" = "failure" ]; then
+            echo "❌ CI failed. Check individual job logs."
+            exit 1
+          fi
+          echo "✅ All CI checks passed."

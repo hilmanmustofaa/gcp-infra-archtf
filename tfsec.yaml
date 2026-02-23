@@ -1,0 +1,19 @@
+# .tfsec.yaml
+
+exclude:
+  - GCP001  # Storage bucket logging disabled
+  - GCP013  # Storage bucket is publicly accessible (use allow_policy override instead)
+  - GCP014  # Disk encryption with customer-managed keys not set (let user decide)
+  - GCP009  # Legacy API access enabled (flagged on GKE even if managed by module)
+  - GCP017  # No user labels (avoid over-enforcement)
+
+severity_overrides:
+  GCP002: ERROR  # Instance IP forwarding should be reviewed
+  GCP012: ERROR  # Cloud SQL should enforce SSL
+  GCP021: ERROR  # Kubernetes workload should have a security context
+  GCP015: ERROR  # Ensure Cloud Functions are not public (if relevant)
+
+minimum_severity: MEDIUM
+
+project_root: modules
+soft_fail: false
