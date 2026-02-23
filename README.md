@@ -46,13 +46,15 @@
 
 These blueprints demonstrate production-ready architectures by combining multiple modules into secure, governance-compliant end-to-end scenarios.
 
-| Blueprint                                                           | Key Components           | Core Hardening                                                                |
-| :------------------------------------------------------------------ | :----------------------- | :---------------------------------------------------------------------------- |
-| [**GKE NodePools**](./examples/e2e-gke-with-nodepools)              | GKE + VPC + NodePools    | **KMS Secrets**, Custom Node SA, Master Authorized Networks, Spot VMs.        |
-| [**Compute Web Stack**](./examples/e2e-compute-tls-lb-armor)        | MIG + LB + Cloud Armor   | **Global HTTPS LB**, Google-managed SSL, disk encryption, IP whitelisting.    |
-| [**Secured Data Tier**](./examples/e2e-secured-data-tier)           | Cloud SQL + GCS + KMS    | **Dual-Key KMS**, Private DB (PSA), scoped SA permissions, encrypted buckets. |
-| [**Organization Governance**](./examples/e2e-organization-baseline) | Folders + Projects + FWs | **Org Policies**, Centralized Log Sinks, Governance Tags, Hierarchical FWs.   |
-| [**Serverless Modern App**](./examples/e2e-serverless-modern-app)   | Cloud Run + SQL + Secret | **VPC Access Connector**, Private SQL connectivity, Secret Manager injection. |
+| Blueprint                                                           | Key Components               | Core Hardening                                                                |
+| :------------------------------------------------------------------ | :--------------------------- | :---------------------------------------------------------------------------- |
+| [**GKE NodePools**](./examples/e2e-gke-with-nodepools)              | GKE + VPC + NodePools        | **KMS Secrets**, Custom Node SA, Master Authorized Networks, Spot VMs.        |
+| [**Compute Web Stack**](./examples/e2e-compute-tls-lb-armor)        | MIG + LB + Cloud Armor       | **Global HTTPS LB**, Google-managed SSL, disk encryption, IP whitelisting.    |
+| [**Secured Data Tier**](./examples/e2e-secured-data-tier)           | Cloud SQL + GCS + KMS        | **Dual-Key KMS**, Private DB (PSA), scoped SA permissions, encrypted buckets. |
+| [**Organization Governance**](./examples/e2e-organization-baseline) | Folders + Projects + FWs     | **Org Policies**, Centralized Log Sinks, Governance Tags, Hierarchical FWs.   |
+| [**Serverless Modern App**](./examples/e2e-serverless-modern-app)   | Cloud Run + SQL + Secret     | **VPC Access Connector**, Private SQL connectivity, Secret Manager injection. |
+| [**Hybrid HA VPN**](./examples/e2e-hybrid-cloud-vpn)                | VPN + Router + BGP           | **Site-to-Site VPN**, Dynamic BGP Routing, Multi-Cloud simulation.            |
+| [**Secured Artifacts**](./examples/e2e-secured-artifact-registry)   | Artifact Registry + Security | **Vulnerability Scanning**, Tag Immutability, Automated Cleanup Policies.     |
 
 ---
 
