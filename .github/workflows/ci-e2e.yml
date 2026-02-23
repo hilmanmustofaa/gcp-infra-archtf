@@ -128,26 +128,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
-        with:
-          working_directory: ${{ matrix.module }}
-          soft_fail: true
-          sarif_file: results.sarif
-          additional_args: --config-file=../../tfsec.yaml
+      - name: Run tfsec (Manual)
+        run: |
+          # Use the binary directly for more predictable pathing
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+          tfsec "${{ matrix.module }}" --format sarif --soft-fail --config-file tfsec.yaml > results.sarif
 
       - name: Upload SARIF to GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: ${{ matrix.module }}/results.sarif
+          sarif_file: results.sarif
           category: tfsec-${{ matrix.module }}
 
   # ── Job 4: E2E Tests with WIF Auth ────────────────────────────────────────
   e2e-test:
     name: "🧪 E2E — ${{ matrix.module }}"
     needs: [discover, validate]
-    if: needs.discover.outputs.has_modules == 'true'
+    # Skip E2E for Dependabot as it lacks secret access for cloud tests
+    if: |
+      needs.discover.outputs.has_modules == 'true' &&
+      github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -158,6 +159,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
