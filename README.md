@@ -55,6 +55,7 @@ These blueprints demonstrate production-ready architectures by combining multipl
 | [**Serverless Modern App**](./examples/e2e-serverless-modern-app)   | Cloud Run + SQL + Secret     | **VPC Access Connector**, Private SQL connectivity, Secret Manager injection. |
 | [**Hybrid HA VPN**](./examples/e2e-hybrid-cloud-vpn)                | VPN + Router + BGP           | **Site-to-Site VPN**, Dynamic BGP Routing, Multi-Cloud simulation.            |
 | [**Secured Artifacts**](./examples/e2e-secured-artifact-registry)   | Artifact Registry + Security | **Vulnerability Scanning**, Tag Immutability, Automated Cleanup Policies.     |
+| [**Landing Zone Blueprint**](./examples/blueprint-landing-zone)     | Org + Net + Workloads        | **Multi-layer Governance**, Shared VPC Hub-Spoke, Org Policies, Central Logs. |
 
 ---
 

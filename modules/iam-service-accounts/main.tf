@@ -22,8 +22,8 @@ locals {
 
   # ===== FinOps labels. =====
   finops_labels_default = {
-    gcp_asset_type = "iam.googleapis.com/ServiceAccount"
-    gcp_service    = "iam.googleapis.com"
+    gcp_asset_type = "iam-googleapis-com--serviceaccount"
+    gcp_service    = "iam-googleapis-com"
     tf_module      = "iam-service-account"
     tf_layer       = "identity"
     tf_resource    = "service_account"

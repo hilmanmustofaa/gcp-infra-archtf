@@ -1,8 +1,8 @@
 locals {
   # ===== FinOps labels. =====
   finops_labels_default = {
-    gcp_asset_type = "cloudkms.googleapis.com/CryptoKey"
-    gcp_service    = "cloudkms.googleapis.com"
+    gcp_asset_type = "cloudkms-googleapis-com--cryptokey"
+    gcp_service    = "cloudkms-googleapis-com"
     tf_module      = "kms"
     tf_layer       = "security"
     tf_resource    = "crypto-key"

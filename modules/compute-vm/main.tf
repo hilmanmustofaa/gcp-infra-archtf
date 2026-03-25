@@ -6,8 +6,8 @@ locals {
   # Refer to Cloud Asset Inventory asset types:
   # https://cloud.google.com/asset-inventory/docs/asset-types
   finops_module_labels_default = {
-    gcp_asset_type = "compute.googleapis.com/Instance"
-    gcp_service    = "compute.googleapis.com"
+    gcp_asset_type = "compute-googleapis-com--instance"
+    gcp_service    = "compute-googleapis-com"
     tf_module      = "compute-vm"
     tf_layer       = "compute"
     tf_resource    = "instance"
@@ -43,7 +43,7 @@ resource "google_compute_disk" "compute_disks" {
     {
       "name"           = each.value.name
       "component"      = each.value.type == "pd-ssd" ? "datadisk" : each.value.type == "pd-balanced" ? "osdisk" : null
-      "gcp_asset_type" = "compute.googleapis.com/Disk"
+      "gcp_asset_type" = "compute-googleapis-com--disk"
       "tf_resource"    = "disk"
     }
   )
@@ -216,7 +216,7 @@ resource "google_compute_instance_template" "compute_instance_templates" {
         var.default_labels,
         disk.value.labels,
         {
-          "gcp_asset_type" = "compute.googleapis.com/Disk"
+          "gcp_asset_type" = "compute-googleapis-com--disk"
           "tf_resource"    = "disk"
         }
       )
@@ -240,7 +240,7 @@ resource "google_compute_instance_template" "compute_instance_templates" {
     {
       "name"           = each.value.name
       "component"      = "template"
-      "gcp_asset_type" = "compute.googleapis.com/InstanceTemplate"
+      "gcp_asset_type" = "compute-googleapis-com--instancetemplate"
       "tf_resource"    = "template"
     }
   )
