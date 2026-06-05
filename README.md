@@ -1,5 +1,3 @@
-<p align="center">
-  <h1 align="center">🏗️ gcp-infra-archtf</h1>
   <p align="center">
     <strong>Enterprise-Grade Terraform Modules for Google Cloud Platform</strong>
   </p>
@@ -41,6 +39,18 @@
 | 📋 **Governance-Ready**     | All resources carry mandatory FinOps labels (`env`, `project`, `owner`). Validation blocks reject non-compliant inputs at `terraform plan`.                  |
 
 ---
+
+## About This Library
+
+This module library was extracted and generalized from real enterprise GCP deployments 
+across banking, government, and energy sectors in Southeast Asia.
+
+Built and maintained by [Hilman Mustofa](https://linkedin.com/in/hilmanmustofa) — 
+Senior Cloud Architect at NTT Data, specializing in GCP infrastructure, 
+DevOps automation, and enterprise cloud migrations.
+
+> Available for freelance engagements on [Upwork](https://www.upwork.com/freelancers/~013221f3d942c21201)
+> 
 
 ## 🏛️ Enterprise-Grade E2E Blueprints
 
@@ -246,7 +256,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
 ## License
 
 ```
-Copyright 2026 ToyLabs
+Copyright 2026 Hilman Mustofa
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
