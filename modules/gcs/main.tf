@@ -1,8 +1,8 @@
 locals {
   # ===== FinOps labels. =====
   finops_labels_default = {
-    gcp_asset_type = "storage.googleapis.com/Bucket"
-    gcp_service    = "storage.googleapis.com"
+    gcp_asset_type = "storage-googleapis-com--bucket"
+    gcp_service    = "storage-googleapis-com"
     tf_module      = "gcs-bucket"
     tf_layer       = "storage"
     tf_resource    = "bucket"
