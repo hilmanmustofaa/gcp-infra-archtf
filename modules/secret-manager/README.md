@@ -42,6 +42,7 @@ It is the canonical way to manage secrets across NTT Data client engagements, wh
 - **Government (data residency):** use `replication.user_managed_replicas` pinned to `asia-southeast2` only — never `automatic` (which may replicate outside the region).
 - **Keep secret material out of state where possible:** avoid `secret_data` for production secrets; write versions out-of-band (CI, gcloud, application). When `secret_data` is used, the value lands in Terraform state — store state encrypted.
 - **Least privilege:** grant `roles/secretmanager.secretAccessor` to specific service accounts via `iam_bindings`, not broad principals.
+- **Rotation requires a service-agent grant:** when a secret uses `rotation` + `topics`, the Secret Manager service agent (`service-<PROJECT_NUMBER>@gcp-sa-secretmanager.iam.gserviceaccount.com`) must hold `roles/pubsub.publisher` on the topic, or secret creation fails. That is a project-level grant **outside** this module's scope (the module manages secrets, not the P4SA). See [`e2e/secure-secrets`](../../e2e/secure-secrets) for the wiring (`google_project_service_identity` + `google_pubsub_topic_iam_member`).
 
 ---
 

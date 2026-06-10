@@ -302,7 +302,53 @@ tasks:
         echo "✅ Scaffolded $DIR (versions, variables, outputs, main, README, examples/basic, tests/plan_basic)."
         echo "   Next: implement main.tf, then task fmt && task validate && task test"
 
+  e2e:toylabs:
+    desc: "Real apply+destroy e2e scenarios against project toylabs (SCENARIO=<name> optional)"
+    cmds:
+      - |
+        PROJECT="${E2E_PROJECT:-toylabs}"
+        SCEN='{{.SCENARIO}}'
+        if [ -n "$SCEN" ]; then
+          DIRS="e2e/$SCEN"
+        else
+          DIRS=$(find e2e -mindepth 1 -maxdepth 1 -type d | sort)
+        fi
+        RC=0
+        for D in $DIRS; do
+          [ -f "$D/main.tf" ] || continue
+          echo "🚀 e2e apply: $D (project=$PROJECT)"
+          terraform -chdir="$D" init -input=false >/dev/null
+          if terraform -chdir="$D" apply -auto-approve -input=false -var project_id="$PROJECT"; then
+            APPLY_OK=1
+          else
+            APPLY_OK=0; RC=1
+            echo "❌ apply failed: $D"
+          fi
+          # Destroy ALWAYS runs after an apply attempt — this is the core of the
+          # destroy strategy. Strays (if any) are caught by 'task e2e:destroy'.
+          echo "🧹 e2e destroy: $D"
+          terraform -chdir="$D" destroy -auto-approve -input=false -var project_id="$PROJECT" || {
+            echo "⚠️  destroy failed for $D — run 'task e2e:destroy' to retry"; RC=1
+          }
+        done
+        [ "$RC" -eq 0 ] && echo "✅ e2e complete (applied + destroyed)" || { echo "❌ e2e had failures"; exit 1; }
+
+  e2e:destroy:
+    desc: "Fallback: force-destroy any leftover e2e scenario state"
+    cmds:
+      - |
+        PROJECT="${E2E_PROJECT:-toylabs}"
+        for D in $(find e2e -mindepth 1 -maxdepth 1 -type d | sort); do
+          if [ -d "$D/.terraform" ] || [ -f "$D/terraform.tfstate" ]; then
+            echo "🧹 destroy $D"
+            terraform -chdir="$D" destroy -auto-approve -input=false -var project_id="$PROJECT" || true
+          fi
+        done
+        echo "✅ e2e cleanup complete"
+
   clean:
     desc: "Clean up generated files"
     cmds:
       - rm -rf .venv publish_tmp .tflint.d results.sarif
+      - find e2e -type d -name '.terraform' -prune -exec rm -rf {} + 2>/dev/null || true
+      - find e2e -type f \( -name 'terraform.tfstate*' -o -name '.terraform.lock.hcl' \) -delete 2>/dev/null || true
