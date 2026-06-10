@@ -36,9 +36,10 @@ resource "google_storage_bucket" "storage_buckets" {
   }
 
   dynamic "autoclass" {
-    for_each = try(each.value.autoclass, null) != null ? [""] : []
+    for_each = each.value.autoclass != null ? [each.value.autoclass] : []
     content {
-      enabled = each.value.autoclass
+      enabled                = autoclass.value.enabled
+      terminal_storage_class = autoclass.value.terminal_storage_class
     }
   }
 

@@ -6,6 +6,7 @@
 - [Module Labels & FinOps](#module-labels-finops)
 - [Testing](#testing)
 - [Version Compatibility](#version-compatibility)
+- [Autoclass storage](#autoclass-storage)
 - [Variables](#variables)
 - [Outputs](#outputs)
 - [Example Usage](#example-usage)
@@ -27,6 +28,9 @@ Create and configure multiple GCS buckets with per-bucket settings and labels.
 
 ✅ **Lifecycle & retention**
 Automate object deletion or archiving, and enforce compliance retention policies with optional locks.
+
+✅ **Autoclass storage**
+Let GCS automatically transition objects between storage classes based on access patterns, with a configurable terminal class (`NEARLINE` or `ARCHIVE`) — ideal for unpredictable access (e.g. MMKI camera images).
 
 ✅ **Uniform bucket-level access**
 Enable IAM-only access and consistent access control behavior.
@@ -80,6 +84,7 @@ Available test scenarios:
 
 * `basic_test` — validates FinOps label merge and name prefix logic
 * `objects_test` — verifies object creation mapping and output consistency
+* `plan_autoclass` — verifies autoclass wiring and the autoclass/lifecycle conflict + terminal-class negative validations
 
 Each test uses Terraform ≥ 1.10.2 syntax (`variables {}` blocks).
 
@@ -94,6 +99,33 @@ Each test uses Terraform ≥ 1.10.2 syntax (`variables {}` blocks).
 | **tfdocs**            | v0.16 +   | Used for auto-generating this documentation        |
 
 ---
+
+## Autoclass storage
+
+[Autoclass](https://cloud.google.com/storage/docs/autoclass) automatically moves each object between storage classes based on its access pattern — no manual lifecycle rules to tune. Set it per bucket via the `autoclass` object:
+
+```hcl
+storage_buckets = {
+  images = {
+    name     = "factory-camera-images"
+    location = "ASIA-SOUTHEAST2"
+
+    autoclass = {
+      enabled                = true
+      terminal_storage_class = "ARCHIVE" # or "NEARLINE"
+    }
+  }
+}
+```
+
+**Constraints enforced by the module (`var.storage_buckets` validation):**
+
+- **Autoclass and `lifecycle_rules` are mutually exclusive** on the same bucket — this is a GCP hard constraint (Autoclass owns the transitions). Defining both fails at plan time with a clear error.
+- **`terminal_storage_class` must be `NEARLINE` or `ARCHIVE`** when set.
+
+> Use Autoclass when access patterns are unpredictable; use explicit `lifecycle_rules` when you have a known, age-based tiering policy. You cannot use both on one bucket.
+
+---
 <!-- BEGIN TFDOC -->
 ## Variables
 
@@ -104,7 +136,7 @@ Each test uses Terraform ≥ 1.10.2 syntax (`variables {}` blocks).
 | [join_separator](variables.tf#L7) | Separator used when joining prefix with resource names. | <code>string</code> |  | <code>&#34;-&#34;</code> |
 | [objects](variables.tf#L13) | Map of objects to be created in the buckets. | <code title="map&#40;object&#40;&#123;&#10;  bucket              &#61; string&#10;  name                &#61; string&#10;  metadata            &#61; optional&#40;map&#40;string&#41;&#41;&#10;  content             &#61; optional&#40;string&#41;&#10;  source              &#61; optional&#40;string&#41;&#10;  cache_control       &#61; optional&#40;string&#41;&#10;  content_disposition &#61; optional&#40;string&#41;&#10;  content_encoding    &#61; optional&#40;string&#41;&#10;  content_language    &#61; optional&#40;string&#41;&#10;  content_type        &#61; optional&#40;string&#41;&#10;  storage_class       &#61; optional&#40;string&#41;&#10;  customer_encryption &#61; optional&#40;object&#40;&#123;&#10;    encryption_algorithm &#61; string&#10;    encryption_key       &#61; string&#10;  &#125;&#41;&#41;&#10;&#125;&#41;&#41;">map&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#123;&#125;</code> |
 | [resource_prefix](variables.tf#L40) | Optional prefix for resource names. | <code>string</code> |  | <code>null</code> |
-| [storage_buckets](variables.tf#L46) | Map of storage buckets to create with their configurations. | <code title="map&#40;object&#40;&#123;&#10;  name                        &#61; string&#10;  location                    &#61; string&#10;  labels                      &#61; optional&#40;map&#40;string&#41;, &#123;&#125;&#41;&#10;  force_destroy               &#61; optional&#40;bool, false&#41;&#10;  uniform_bucket_level_access &#61; optional&#40;bool, true&#41;&#10;  public_access_prevention    &#61; optional&#40;string, &#34;inherited&#34;&#41;&#10;  storage_class               &#61; optional&#40;string&#41;&#10;&#10;&#10;  versioning &#61; optional&#40;object&#40;&#123;&#10;    enabled &#61; optional&#40;bool, false&#41;&#10;  &#125;&#41;, &#123;&#125;&#41;&#10;&#10;&#10;  autoclass &#61; optional&#40;bool&#41;&#10;&#10;&#10;  encryption &#61; optional&#40;object&#40;&#123;&#10;    kms_key_name &#61; string&#10;  &#125;&#41;&#41;&#10;&#10;&#10;  lifecycle_rules &#61; optional&#40;map&#40;object&#40;&#123;&#10;    action &#61; object&#40;&#123;&#10;      type          &#61; string&#10;      storage_class &#61; optional&#40;string&#41;&#10;    &#125;&#41;&#10;    condition &#61; object&#40;&#123;&#10;      age                        &#61; optional&#40;number&#41;&#10;      created_before             &#61; optional&#40;string&#41;&#10;      custom_time_before         &#61; optional&#40;string&#41;&#10;      days_since_custom_time     &#61; optional&#40;number&#41;&#10;      days_since_noncurrent_time &#61; optional&#40;number&#41;&#10;      matches_prefix             &#61; optional&#40;list&#40;string&#41;&#41;&#10;      matches_storage_class      &#61; optional&#40;list&#40;string&#41;&#41;&#10;      matches_suffix             &#61; optional&#40;list&#40;string&#41;&#41;&#10;      noncurrent_time_before     &#61; optional&#40;string&#41;&#10;      num_newer_versions         &#61; optional&#40;number&#41;&#10;      with_state                 &#61; optional&#40;string&#41;&#10;    &#125;&#41;&#10;  &#125;&#41;&#41;&#41;&#10;&#10;&#10;  retention_policy &#61; optional&#40;object&#40;&#123;&#10;    is_locked        &#61; optional&#40;bool, false&#41;&#10;    retention_period &#61; optional&#40;number&#41;&#10;  &#125;&#41;, &#123;&#125;&#41;&#10;&#10;&#10;  logging &#61; optional&#40;object&#40;&#123;&#10;    log_bucket        &#61; optional&#40;string&#41;&#10;    log_object_prefix &#61; optional&#40;string&#41;&#10;  &#125;&#41;, &#123;&#125;&#41;&#10;&#10;&#10;  website &#61; optional&#40;object&#40;&#123;&#10;    main_page_suffix &#61; optional&#40;string&#41;&#10;    not_found_page   &#61; optional&#40;string&#41;&#10;  &#125;&#41;&#41;&#10;&#10;&#10;  custom_placement_config &#61; optional&#40;list&#40;string&#41;&#41;&#10;&#125;&#41;&#41;">map&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#123;&#125;</code> |
+| [storage_buckets](variables.tf#L46) | Map of storage buckets to create with their configurations. | <code title="map&#40;object&#40;&#123;&#10;  name                        &#61; string&#10;  location                    &#61; string&#10;  labels                      &#61; optional&#40;map&#40;string&#41;, &#123;&#125;&#41;&#10;  force_destroy               &#61; optional&#40;bool, false&#41;&#10;  uniform_bucket_level_access &#61; optional&#40;bool, true&#41;&#10;  public_access_prevention    &#61; optional&#40;string, &#34;inherited&#34;&#41;&#10;  storage_class               &#61; optional&#40;string&#41;&#10;&#10;&#10;  versioning &#61; optional&#40;object&#40;&#123;&#10;    enabled &#61; optional&#40;bool, false&#41;&#10;  &#125;&#41;, &#123;&#125;&#41;&#10;&#10;&#10;  autoclass &#61; optional&#40;object&#40;&#123;&#10;    enabled                &#61; bool&#10;    terminal_storage_class &#61; optional&#40;string&#41;&#10;  &#125;&#41;&#41;&#10;&#10;&#10;  encryption &#61; optional&#40;object&#40;&#123;&#10;    kms_key_name &#61; string&#10;  &#125;&#41;&#41;&#10;&#10;&#10;  lifecycle_rules &#61; optional&#40;map&#40;object&#40;&#123;&#10;    action &#61; object&#40;&#123;&#10;      type          &#61; string&#10;      storage_class &#61; optional&#40;string&#41;&#10;    &#125;&#41;&#10;    condition &#61; object&#40;&#123;&#10;      age                        &#61; optional&#40;number&#41;&#10;      created_before             &#61; optional&#40;string&#41;&#10;      custom_time_before         &#61; optional&#40;string&#41;&#10;      days_since_custom_time     &#61; optional&#40;number&#41;&#10;      days_since_noncurrent_time &#61; optional&#40;number&#41;&#10;      matches_prefix             &#61; optional&#40;list&#40;string&#41;&#41;&#10;      matches_storage_class      &#61; optional&#40;list&#40;string&#41;&#41;&#10;      matches_suffix             &#61; optional&#40;list&#40;string&#41;&#41;&#10;      noncurrent_time_before     &#61; optional&#40;string&#41;&#10;      num_newer_versions         &#61; optional&#40;number&#41;&#10;      with_state                 &#61; optional&#40;string&#41;&#10;    &#125;&#41;&#10;  &#125;&#41;&#41;&#41;&#10;&#10;&#10;  retention_policy &#61; optional&#40;object&#40;&#123;&#10;    is_locked        &#61; optional&#40;bool, false&#41;&#10;    retention_period &#61; optional&#40;number&#41;&#10;  &#125;&#41;, &#123;&#125;&#41;&#10;&#10;&#10;  logging &#61; optional&#40;object&#40;&#123;&#10;    log_bucket        &#61; optional&#40;string&#41;&#10;    log_object_prefix &#61; optional&#40;string&#41;&#10;  &#125;&#41;, &#123;&#125;&#41;&#10;&#10;&#10;  website &#61; optional&#40;object&#40;&#123;&#10;    main_page_suffix &#61; optional&#40;string&#41;&#10;    not_found_page   &#61; optional&#40;string&#41;&#10;  &#125;&#41;&#41;&#10;&#10;&#10;  custom_placement_config &#61; optional&#40;list&#40;string&#41;&#41;&#10;&#125;&#41;&#41;">map&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#123;&#125;</code> |
 
 ## Outputs
 
