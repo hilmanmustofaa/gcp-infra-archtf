@@ -33,8 +33,8 @@ run "basic_test" {
   }
 
   assert {
-    condition     = output.finops_labels["gcp_service"] == "iam.googleapis.com"
-    error_message = "FinOps label gcp_service must be iam.googleapis.com."
+    condition     = output.finops_labels["gcp_service"] == "iam-googleapis-com"
+    error_message = "FinOps label gcp_service must be iam-googleapis-com."
   }
 
   assert {
