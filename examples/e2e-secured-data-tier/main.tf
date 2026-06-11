@@ -155,6 +155,9 @@ module "gcs" {
   }
 
   default_labels = var.default_labels
+
+  # Bucket CMEK needs the storage service-agent KMS grant to exist first.
+  depends_on = [google_kms_crypto_key_iam_member.storage_kms]
 }
 
 # Grant SA access to GCS
@@ -188,10 +191,11 @@ module "sql" {
 
   sql_database_instances = {
     "data-db" = {
-      name             = "data-db-instance-${local.sfx}"
-      region           = var.region
-      database_version = "POSTGRES_15"
-      project          = var.project_id
+      name                = "data-db-instance-${local.sfx}"
+      region              = var.region
+      database_version    = "POSTGRES_15"
+      project             = var.project_id
+      deletion_protection = false # e2e: allow clean teardown
 
       encryption_key_name = module.kms.crypto_keys["db-key"].id
 
@@ -200,7 +204,7 @@ module "sql" {
 
         ip_configuration = {
           ipv4_enabled        = false
-          private_network     = module.vpc.networks["data-vpc"].id
+          private_network     = "data-vpc"
           authorized_networks = {}
         }
 
