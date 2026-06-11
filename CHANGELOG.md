@@ -9,11 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Security scanning migrated from tfsec (EOL) to [Trivy](https://trivy.dev).**
-  CI uses the maintained `aquasecurity/trivy-action` (config scan) → SARIF →
+  CI installs the Trivy CLI directly (pinned) and runs `trivy config` → SARIF →
   GitHub Security; `task security` runs `trivy config` (HIGH/CRITICAL, soft),
   with `task security:strict` to enforce. `trivy.yaml` + `.trivyignore` replace
   `tfsec.yaml`. Trivy surfaced one real HIGH (`GCP-0057`, GKE node-metadata
   exposure) that the previous tfsec config missed — left visible for triage.
+  (The `aquasecurity/trivy-action` was dropped: it transitively pins the yanked
+  `setup-trivy@v0.2.1` and fails to resolve.)
+
+### Fixed
+
+- **Strong-typed loosely (`type = any`) modules surfaced by real apply-testing:**
+  `net-router`, `net-security-policy` (full object schemas; omitted optionals
+  default to null so `terraform validate` now catches input drift).
+- **`net-vpn`** — dynamic (BGP/router) tunnels no longer set `local/remote_traffic_selector`
+  (GCP rejects combining `router` with traffic selectors).
 
 ## [1.0.1] - 2026-06-11
 
