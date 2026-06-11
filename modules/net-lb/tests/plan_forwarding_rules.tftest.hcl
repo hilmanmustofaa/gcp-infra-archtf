@@ -1,3 +1,5 @@
+mock_provider "google" {}
+
 run "plan_forwarding_rules" {
   command = plan
 

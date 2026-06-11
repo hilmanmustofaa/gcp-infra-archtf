@@ -1,3 +1,5 @@
+mock_provider "google" {}
+
 variables {
   project_id    = "example-project"
   location      = "asia-southeast2"

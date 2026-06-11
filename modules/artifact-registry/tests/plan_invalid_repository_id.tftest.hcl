@@ -1,3 +1,5 @@
+mock_provider "google" {}
+
 run "plan_invalid_repository_id" {
   command = plan
 
