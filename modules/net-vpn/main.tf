@@ -57,9 +57,11 @@ resource "google_compute_vpn_tunnel" "compute_vpn_tunnels" {
   router                          = each.value.router
   peer_ip                         = each.value.peer_ip
   ike_version                     = each.value.ike_version
-  local_traffic_selector          = each.value.local_traffic_selector
-  remote_traffic_selector         = each.value.remote_traffic_selector
-  labels                          = merge(var.default_labels, each.value.labels)
-  region                          = each.value.region
-  project                         = each.value.project
+  # Dynamic (BGP/router-based) tunnels must NOT set traffic selectors — GCP
+  # rejects setting both 'router' and local/remote_traffic_selector.
+  local_traffic_selector  = each.value.router != null ? null : each.value.local_traffic_selector
+  remote_traffic_selector = each.value.router != null ? null : each.value.remote_traffic_selector
+  labels                  = merge(var.default_labels, each.value.labels)
+  region                  = each.value.region
+  project                 = each.value.project
 }

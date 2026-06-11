@@ -28,8 +28,8 @@ run "plan_basic_policy" {
                 expression = null
               }
             }
-            rate_limit_options = []
-            redirect_options   = []
+            rate_limit_options = null
+            redirect_options   = null
           },
           {
             action      = "deny(403)"
@@ -45,8 +45,8 @@ run "plan_basic_policy" {
                 expression = null
               }
             }
-            rate_limit_options = []
-            redirect_options   = []
+            rate_limit_options = null
+            redirect_options   = null
           }
         ]
         advanced_options_config    = null

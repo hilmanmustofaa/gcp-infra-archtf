@@ -1,7 +1,24 @@
 variable "compute_routers" {
   description = "A map of router objects."
-  type        = any
-  default     = {}
+  type = map(object({
+    name                          = string
+    network                       = string
+    description                   = optional(string)
+    encrypted_interconnect_router = optional(bool)
+    region                        = optional(string)
+    project                       = optional(string)
+    bgp = optional(object({
+      asn                = number
+      advertise_mode     = optional(string)
+      advertised_groups  = optional(list(string))
+      keepalive_interval = optional(number)
+      advertised_ip_ranges = optional(list(object({
+        range       = string
+        description = optional(string)
+      })), [])
+    }))
+  }))
+  default = {}
 }
 
 

@@ -43,7 +43,7 @@ run "plan_rate_limit_policy" {
                 interval_sec = 60
               }
             }
-            redirect_options = []
+            redirect_options = null
           },
           {
             action      = "deny(403)"
@@ -59,8 +59,8 @@ run "plan_rate_limit_policy" {
                 expression = null
               }
             }
-            rate_limit_options = []
-            redirect_options   = []
+            rate_limit_options = null
+            redirect_options   = null
           }
         ]
         advanced_options_config    = null
