@@ -18,6 +18,17 @@ data "google_project" "project" {
   project_id = var.project_id
 }
 
+# Run-scoped suffix: KMS key rings/keys are immortal in GCP and Cloud SQL
+# instance names are reserved ~1 week after deletion, so e2e re-runs need
+# unique names for those resources.
+resource "random_id" "suffix" {
+  byte_length = 3
+}
+
+locals {
+  sfx = random_id.suffix.hex
+}
+
 # ------------------------------------------------------------------------------
 # VPC and Private Service Access (PSA)
 # ------------------------------------------------------------------------------
@@ -70,7 +81,7 @@ module "kms" {
 
   kms_key_rings = {
     "data-keyring" = {
-      name     = "data-keyring"
+      name     = "data-keyring-${local.sfx}"
       location = var.region
       project  = var.project_id
     }
@@ -78,15 +89,15 @@ module "kms" {
 
   kms_crypto_keys = {
     "storage-key" = {
-      name            = "storage-key"
-      key_ring        = module.kms.key_rings["data-keyring"].id
+      name            = "storage-key-${local.sfx}"
+      key_ring        = "data-keyring"
       purpose         = "ENCRYPT_DECRYPT"
       rotation_period = "7776000s" # 90 days
       labels          = var.default_labels
     }
     "db-key" = {
-      name            = "db-key"
-      key_ring        = module.kms.key_rings["data-keyring"].id
+      name            = "db-key-${local.sfx}"
+      key_ring        = "data-keyring"
       purpose         = "ENCRYPT_DECRYPT"
       rotation_period = "7776000s"
       labels          = var.default_labels
@@ -136,7 +147,7 @@ module "gcs" {
 
       lifecycle_rules = {
         "archive" = {
-          action    = { type = "SET_STORAGE_CLASS", storage_class = "NEARLINE" }
+          action    = { type = "SetStorageClass", storage_class = "NEARLINE" }
           condition = { age = 30 }
         }
       }
@@ -144,6 +155,9 @@ module "gcs" {
   }
 
   default_labels = var.default_labels
+
+  # Bucket CMEK needs the storage service-agent KMS grant to exist first.
+  depends_on = [google_kms_crypto_key_iam_member.storage_kms]
 }
 
 # Grant SA access to GCS
@@ -153,17 +167,16 @@ resource "google_storage_bucket_iam_member" "sa_storage_access" {
   member = "serviceAccount:${module.data_sa.email}"
 }
 
-# Grant Storage Service Agent access to KMS key
-resource "google_project_service_identity" "storage_agent" {
-  provider = google-beta
-  project  = var.project_id
-  service  = "storage.googleapis.com"
+# Grant the Cloud Storage service agent access to the KMS key (CMEK).
+# Storage exposes its agent via this data source, not google_project_service_identity.
+data "google_storage_project_service_account" "gcs_agent" {
+  project = var.project_id
 }
 
 resource "google_kms_crypto_key_iam_member" "storage_kms" {
   crypto_key_id = module.kms.crypto_keys["storage-key"].id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${google_project_service_identity.storage_agent.email}"
+  member        = "serviceAccount:${data.google_storage_project_service_account.gcs_agent.email_address}"
 }
 
 # ------------------------------------------------------------------------------
@@ -178,10 +191,11 @@ module "sql" {
 
   sql_database_instances = {
     "data-db" = {
-      name             = "data-db-instance"
-      region           = var.region
-      database_version = "POSTGRES_15"
-      project          = var.project_id
+      name                = "data-db-instance-${local.sfx}"
+      region              = var.region
+      database_version    = "POSTGRES_15"
+      project             = var.project_id
+      deletion_protection = false # e2e: allow clean teardown
 
       encryption_key_name = module.kms.crypto_keys["db-key"].id
 
@@ -190,7 +204,7 @@ module "sql" {
 
         ip_configuration = {
           ipv4_enabled        = false
-          private_network     = module.vpc.networks["data-vpc"].id
+          private_network     = "data-vpc"
           authorized_networks = {}
         }
 
@@ -220,8 +234,11 @@ module "sql" {
     }
   }
 
-  # Ensure PSA is ready before creating SQL instance
-  depends_on = [google_service_networking_connection.psa_connection]
+  # Ensure PSA + the SQL service-agent CMEK grant are ready before the instance.
+  depends_on = [
+    google_service_networking_connection.psa_connection,
+    google_kms_crypto_key_iam_member.sql_kms,
+  ]
 
   default_labels = var.default_labels
 }
@@ -242,6 +259,13 @@ resource "google_kms_crypto_key_iam_member" "sql_kms" {
 # ------------------------------------------------------------------------------
 # Artifact Registry (AI/App Images - KMS-Secured)
 # ------------------------------------------------------------------------------
+# Grant the Artifact Registry service agent access to the KMS key (CMEK).
+resource "google_kms_crypto_key_iam_member" "ar_kms" {
+  crypto_key_id = module.kms.crypto_keys["storage-key"].id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-artifactregistry.iam.gserviceaccount.com"
+}
+
 module "registry" {
   source = "../../modules/artifact-registry"
 
@@ -254,4 +278,6 @@ module "registry" {
   kms_key_name = module.kms.crypto_keys["storage-key"].id # Reusing storage key
 
   labels = var.default_labels
+
+  depends_on = [google_kms_crypto_key_iam_member.ar_kms]
 }

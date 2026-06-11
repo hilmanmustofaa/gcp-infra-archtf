@@ -20,7 +20,7 @@ resource "google_compute_forwarding_rule" "compute_forwarding_rules" {
     try(each.value.labels, {}),
     {
       "resourcetype"   = "forwarding-rule"
-      "gcp_asset_type" = "compute.googleapis.com/ForwardingRule"
+      "gcp_asset_type" = "compute-googleapis-com--forwardingrule"
     }
   )
   all_ports     = each.value.all_ports

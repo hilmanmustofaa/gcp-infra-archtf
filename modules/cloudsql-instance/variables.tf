@@ -11,9 +11,11 @@ variable "join_separator" {
 }
 
 variable "network_lookup" {
-  description = "Map of VPC network name → network object (must contain 'id' for private network use)."
-  type        = map(any)
-  default     = {}
+  description = "Map of VPC network name => network object (id) for private network use."
+  type = map(object({
+    id = string
+  }))
+  default = {}
 }
 
 variable "resource_prefix" {

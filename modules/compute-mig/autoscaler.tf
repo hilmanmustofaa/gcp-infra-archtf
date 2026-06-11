@@ -21,7 +21,7 @@ resource "google_compute_autoscaler" "autoscaler" {
     mode            = var.autoscaler_config.mode
 
     dynamic "scale_down_control" {
-      for_each = local.as_scaling.down == null ? [] : [local.as_scaling.down]
+      for_each = try(local.as_scaling.down, null) == null ? [] : [local.as_scaling.down]
       content {
         time_window_sec = scale_down_control.value.time_window_sec
         dynamic "max_scaled_down_replicas" {
@@ -38,7 +38,7 @@ resource "google_compute_autoscaler" "autoscaler" {
     }
 
     dynamic "scale_in_control" {
-      for_each = local.as_scaling.in == null ? [] : [local.as_scaling.in]
+      for_each = try(local.as_scaling.in, null) == null ? [] : [local.as_scaling.in]
       content {
         time_window_sec = scale_in_control.value.time_window_sec
         dynamic "max_scaled_in_replicas" {
@@ -118,7 +118,7 @@ resource "google_compute_region_autoscaler" "autoscaler" {
     mode            = var.autoscaler_config.mode
 
     dynamic "scale_down_control" {
-      for_each = local.as_scaling.down == null ? [] : [local.as_scaling.down]
+      for_each = try(local.as_scaling.down, null) == null ? [] : [local.as_scaling.down]
       content {
         time_window_sec = scale_down_control.value.time_window_sec
         dynamic "max_scaled_down_replicas" {
@@ -135,7 +135,7 @@ resource "google_compute_region_autoscaler" "autoscaler" {
     }
 
     dynamic "scale_in_control" {
-      for_each = local.as_scaling.in == null ? [] : [local.as_scaling.in]
+      for_each = try(local.as_scaling.in, null) == null ? [] : [local.as_scaling.in]
       content {
         time_window_sec = scale_in_control.value.time_window_sec
         dynamic "max_scaled_in_replicas" {

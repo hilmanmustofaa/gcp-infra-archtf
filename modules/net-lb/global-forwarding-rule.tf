@@ -13,7 +13,7 @@ resource "google_compute_global_forwarding_rule" "compute_global_forwarding_rule
     try(each.value.labels, {}),
     {
       "resourcetype"   = "global-forwarding-rule"
-      "gcp_asset_type" = "compute.googleapis.com/GlobalForwardingRule"
+      "gcp_asset_type" = "compute-googleapis-com--globalforwardingrule"
     }
   )
   load_balancing_scheme = each.value.load_balancing_scheme

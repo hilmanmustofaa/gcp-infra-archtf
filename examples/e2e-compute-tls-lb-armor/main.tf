@@ -53,20 +53,20 @@ module "cloud_armor" {
       project     = var.project_id
       description = "Security policy to whitelist specific IPs"
 
-      rules = {
-        "deny_all" = {
-          action      = "deny(403)"
-          priority    = 2147483647
-          match       = { versioned_expr = "SRC_IPS_V1", config = { src_ip_ranges = ["*"] } }
-          description = "Default deny all"
-        }
-        "whitelist_ips" = {
+      rule = [
+        {
           action      = "allow"
           priority    = 1000
-          match       = { versioned_expr = "SRC_IPS_V1", config = { src_ip_ranges = var.whitelist_ips } }
           description = "Whitelist company IPs"
-        }
-      }
+          match       = { versioned_expr = "SRC_IPS_V1", config = { src_ip_ranges = var.whitelist_ips } }
+        },
+        {
+          action      = "deny(403)"
+          priority    = 2147483647
+          description = "Default deny all"
+          match       = { versioned_expr = "SRC_IPS_V1", config = { src_ip_ranges = ["*"] } }
+        },
+      ]
     }
   }
 }
@@ -198,8 +198,9 @@ module "lb" {
     "web-hc" = {
       project = var.project_id
       name    = "web-hc"
-      http_health_check = {
-        port = 80
+      health_check = {
+        protocol = "HTTP"
+        port     = 80
       }
     }
   }
@@ -214,8 +215,11 @@ module "lb" {
       health_checks         = ["web-hc"]
       security_policy       = module.cloud_armor.security_policies["web-armor-policy"].self_link
 
-      backends = [{
-        group = module.web_mig.instance_group
+      backend = [{
+        group           = module.web_mig.instance_group
+        balancing_mode  = "UTILIZATION"
+        capacity_scaler = 1.0
+        max_utilization = 0.8
       }]
     }
   }

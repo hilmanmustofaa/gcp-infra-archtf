@@ -17,15 +17,22 @@ variable "compute_routes" {
 }
 
 variable "data_compute_networks" {
-  description = "Map of data sources for compute networks."
-  type        = map(any)
-  default     = {}
+  description = "Map of data sources for looking up existing compute networks."
+  type = map(object({
+    name    = string
+    project = optional(string)
+  }))
+  default = {}
 }
 
 variable "data_compute_subnetworks" {
-  description = "Map of data sources for compute subnetworks."
-  type        = map(any)
-  default     = {}
+  description = "Map of data sources for looking up existing compute subnetworks."
+  type = map(object({
+    name    = string
+    project = optional(string)
+    region  = optional(string)
+  }))
+  default = {}
 }
 
 variable "join_separator" {

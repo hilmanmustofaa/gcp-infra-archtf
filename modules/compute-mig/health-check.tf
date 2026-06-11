@@ -94,7 +94,8 @@ resource "google_compute_health_check" "health_checks" {
   }
 
   dynamic "log_config" {
-    for_each = try(local.hc.enable_logging, false) ? [""] : []
+    # coalesce: try() returns null (not the default) when the field exists but is null.
+    for_each = coalesce(try(local.hc.enable_logging, false), false) ? [""] : []
     content {
       enable = true
     }
