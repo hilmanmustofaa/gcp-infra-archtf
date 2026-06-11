@@ -136,11 +136,12 @@ resource "google_sql_database_instance" "sql_database_instances" {
 }
 
 resource "random_password" "passwords" {
-  for_each = toset([
-    for k, v in var.sql_users : k if v.password == null
-  ])
-  length  = 16
-  special = true
+  # Generate a password per user (selected only when the user provides none).
+  # for_each over the map keys avoids tainting it with the sensitive password
+  # value (a filter on v.password makes the set sensitive -> invalid for_each).
+  for_each = var.sql_users
+  length   = 16
+  special  = true
 }
 
 resource "google_sql_database" "sql_databases" {

@@ -79,14 +79,14 @@ module "kms" {
   kms_crypto_keys = {
     "storage-key" = {
       name            = "storage-key"
-      key_ring        = module.kms.key_rings["data-keyring"].id
+      key_ring        = "data-keyring"
       purpose         = "ENCRYPT_DECRYPT"
       rotation_period = "7776000s" # 90 days
       labels          = var.default_labels
     }
     "db-key" = {
       name            = "db-key"
-      key_ring        = module.kms.key_rings["data-keyring"].id
+      key_ring        = "data-keyring"
       purpose         = "ENCRYPT_DECRYPT"
       rotation_period = "7776000s"
       labels          = var.default_labels
