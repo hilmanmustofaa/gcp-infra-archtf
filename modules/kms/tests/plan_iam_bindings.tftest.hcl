@@ -1,3 +1,6 @@
+mock_provider "google" {}
+mock_provider "google-beta" {}
+
 run "plan_iam_bindings" {
   command = plan
 

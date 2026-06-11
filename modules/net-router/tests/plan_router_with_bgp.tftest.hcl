@@ -1,3 +1,5 @@
+mock_provider "google" {}
+
 run "plan_router_with_bgp" {
   command = plan
 

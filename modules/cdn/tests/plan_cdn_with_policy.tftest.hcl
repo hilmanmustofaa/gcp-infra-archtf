@@ -1,3 +1,6 @@
+mock_provider "google" {}
+mock_provider "google-beta" {}
+
 run "plan_cdn_with_policy" {
   command = plan
 

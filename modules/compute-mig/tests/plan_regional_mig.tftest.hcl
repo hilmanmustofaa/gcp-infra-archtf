@@ -1,3 +1,6 @@
+mock_provider "google" {}
+mock_provider "google-beta" {}
+
 run "plan_regional_mig" {
   command = plan
 

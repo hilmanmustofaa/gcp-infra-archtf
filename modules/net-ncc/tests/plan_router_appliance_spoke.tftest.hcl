@@ -1,3 +1,5 @@
+mock_provider "google" {}
+
 run "plan_router_appliance_spoke" {
   command = plan
 
