@@ -1,6 +1,6 @@
 output "ca_certificate" {
   description = "The cluster CA certificate (base64 encoded)."
-  value       = google_container_cluster.autopilot_cluster.master_auth[0].cluster_ca_certificate
+  value       = try(google_container_cluster.autopilot_cluster.master_auth[0].cluster_ca_certificate, null)
   sensitive   = true
 }
 

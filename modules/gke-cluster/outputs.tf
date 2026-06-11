@@ -5,7 +5,7 @@ output "backup_plan_ids" {
 
 output "ca_certificate" {
   description = "Cluster ca certificate (base64 encoded)."
-  value       = google_container_cluster.container_clusters.master_auth[0].cluster_ca_certificate
+  value       = try(google_container_cluster.container_clusters.master_auth[0].cluster_ca_certificate, null)
   sensitive   = true
 }
 

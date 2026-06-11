@@ -43,6 +43,7 @@ A clean teardown is a hard requirement — no orphaned billable resources.
 |---|---|---|
 | `secure-secrets` | `secret-manager`, `monitoring` | Secret with automatic replication + rotation topic (incl. the Secret Manager service-agent `pubsub.publisher` grant) and an email notification channel. |
 | `log-export` | `gcs`, `logging-sink` | Bucket with Autoclass as a pre-existing destination + a GCS log sink with writer-identity IAM. Demonstrates the "destination must pre-exist" composition. |
+| `label-smoke` | `artifact-registry` | Proves the FinOps label-value hyphenation fix applies on real GCP (dotted label values are rejected at apply time). |
 
 Both scenarios have been validated end-to-end against `toylabs` (apply → destroy,
 zero strays).

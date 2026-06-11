@@ -28,8 +28,8 @@ locals {
 
   # ===== FinOps labels. =====
   finops_labels_default = {
-    gcp_asset_type = "run.googleapis.com/Service"
-    gcp_service    = "run.googleapis.com"
+    gcp_asset_type = "run-googleapis-com--service"
+    gcp_service    = "run-googleapis-com"
     tf_module      = "cloud-run-v2"
     tf_layer       = "compute"
     tf_resource    = "service"

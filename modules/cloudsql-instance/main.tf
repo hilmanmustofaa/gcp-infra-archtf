@@ -3,8 +3,8 @@ locals {
 
   # ===== FinOps labels. =====
   finops_labels_default = {
-    gcp_asset_type = "sqladmin.googleapis.com/Instance"
-    gcp_service    = "sqladmin.googleapis.com"
+    gcp_asset_type = "sqladmin-googleapis-com--instance"
+    gcp_service    = "sqladmin-googleapis-com"
     tf_module      = "cloudsql-instance"
     tf_layer       = "data"
     tf_resource    = "instance"

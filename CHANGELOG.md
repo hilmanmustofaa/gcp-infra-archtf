@@ -4,6 +4,25 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-06-11
+
+### Fixed
+
+- **FinOps label values hyphenated across 7 more modules** — `artifact-registry`,
+  `cloud-run-v2`, `cloudsql-instance`, `dns`, `gke-cluster`,
+  `gke-autopilot-cluster`, `net-lb`. They emitted dotted values
+  (e.g. `container.googleapis.com/Cluster`, `sqladmin.googleapis.com`) which GCP
+  **rejects** as label values (`[a-z0-9_-]` only), causing **apply-time
+  failures** on resources that carry the mandatory FinOps labels. Plan tests
+  never caught this; surfaced by real e2e. Values now follow the repo convention
+  (`container-googleapis-com--cluster`, `sqladmin-googleapis-com`).
+
+### Added
+
+- **`e2e/label-smoke`** scenario — real apply+destroy on a live project proving
+  the label-value fix applies cleanly (verified on `artifact-registry`;
+  `gcs` covered by the existing `log-export` e2e).
+
 ## [1.0.0] - 2026-06-11
 
 First stable release of the gcp-infra-archtf module library.
@@ -48,4 +67,5 @@ First stable release of the gcp-infra-archtf module library.
 - **`compute-vm`, `iam-service-accounts`** — aligned stale FinOps label test
   assertions with the hyphenated label convention.
 
+[1.0.1]: https://github.com/hilmanmustofaa/gcp-infra-archtf/releases/tag/v1.0.1
 [1.0.0]: https://github.com/hilmanmustofaa/gcp-infra-archtf/releases/tag/v1.0.0
