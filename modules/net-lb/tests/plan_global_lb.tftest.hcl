@@ -47,8 +47,8 @@ run "plan_global_lb" {
         port_name                       = null
         protocol                        = null
         security_policy                 = null
-        session_affinity = null
-        timeout_sec      = 30
+        session_affinity                = null
+        timeout_sec                     = 30
         log_config = {
           enable = false
         }
