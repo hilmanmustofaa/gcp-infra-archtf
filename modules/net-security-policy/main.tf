@@ -20,14 +20,14 @@ resource "google_compute_security_policy" "compute_security_policies" {
 
       match {
         dynamic "config" {
-          for_each = length(rule.value.match.config.src_ip_ranges) > 0 ? { "src_ip_ranges" = rule.value.match.config.src_ip_ranges } : {}
+          for_each = try(length(rule.value.match.config.src_ip_ranges), 0) > 0 ? { "src_ip_ranges" = rule.value.match.config.src_ip_ranges } : {}
           content {
             src_ip_ranges = rule.value.match.config.src_ip_ranges
           }
         }
         versioned_expr = rule.value.match.versioned_expr
         dynamic "expr" {
-          for_each = rule.value.match.expr.expression != null ? { "expression" = rule.value.match.expr.expression } : {}
+          for_each = try(rule.value.match.expr.expression, null) != null ? { "expression" = rule.value.match.expr.expression } : {}
           content {
             expression = rule.value.match.expr.expression
           }
@@ -35,7 +35,7 @@ resource "google_compute_security_policy" "compute_security_policies" {
       }
 
       dynamic "rate_limit_options" {
-        for_each = length(rule.value.rate_limit_options) > 0 ? { "rate_limit_options" = rule.value.rate_limit_options } : {}
+        for_each = rule.value.rate_limit_options != null ? { "rate_limit_options" = rule.value.rate_limit_options } : {}
         content {
           ban_duration_sec = rate_limit_options.value.ban_duration_sec
           ban_threshold {
@@ -54,7 +54,7 @@ resource "google_compute_security_policy" "compute_security_policies" {
       }
 
       dynamic "redirect_options" {
-        for_each = length(rule.value.redirect_options) > 0 ? { "redirect_options" = rule.value.redirect_options } : {}
+        for_each = rule.value.redirect_options != null ? { "redirect_options" = rule.value.redirect_options } : {}
         content {
           type   = redirect_options.value.type
           target = redirect_options.value.target
