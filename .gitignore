@@ -37,3 +37,18 @@ validation_error.txt
 
 #Agent
 .agent
+
+# AI assistant context — may contain client names / internal context.
+# Keep OUT of this public repo. Commit a sanitized version explicitly if needed.
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# Local credentials / service-account keys — never commit (public repo)
+*.json.key
+*-key.json
+*-sa.json
+credentials.json
+application_default_credentials.json
+*.pem
+*.p12
