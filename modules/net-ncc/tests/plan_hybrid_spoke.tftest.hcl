@@ -1,3 +1,5 @@
+mock_provider "google" {}
+
 run "plan_hybrid_spoke" {
   command = plan
 

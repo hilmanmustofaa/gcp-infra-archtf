@@ -1,3 +1,6 @@
+mock_provider "google" {}
+mock_provider "google-beta" {}
+
 run "plan_vpc_with_secondary_ranges" {
   command = plan
 
