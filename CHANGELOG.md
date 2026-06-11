@@ -20,8 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Strong-typed loosely (`type = any`) modules surfaced by real apply-testing:**
-  `net-router`, `net-security-policy` (full object schemas; omitted optionals
-  default to null so `terraform validate` now catches input drift).
+  `net-router`, `net-security-policy`, `net-lb` (all 8 vars) — full object
+  schemas; omitted optionals default to null so `terraform validate` now catches
+  input drift. Nested optional blocks guarded by `!= null` (was `length()`).
 - **`net-vpn`** — dynamic (BGP/router) tunnels no longer set `local/remote_traffic_selector`
   (GCP rejects combining `router` with traffic selectors).
 
