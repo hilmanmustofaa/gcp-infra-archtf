@@ -1,4 +1,5 @@
 mock_provider "google" {}
+mock_provider "google-beta" {}
 
 run "plan_global_lb" {
   command = plan
