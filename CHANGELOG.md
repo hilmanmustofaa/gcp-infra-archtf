@@ -17,13 +17,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (The `aquasecurity/trivy-action` was dropped: it transitively pins the yanked
   `setup-trivy@v0.2.1` and fails to resolve.)
 
+### Added
+
+- **CI now validates the `examples/` blueprints** (`validate-examples` job in the
+  gate). With strongly-typed modules, `terraform validate` catches blueprint
+  input-shape drift, so examples can no longer silently rot.
+
+### Changed
+
+- **Strong-typed every loosely (`type = any`) module** surfaced by real
+  apply-testing: `net-router`, `net-security-policy`, `net-lb` (all 8 vars),
+  `net-vpc`, `dns`, `cloudsql-instance`. Full object schemas; omitted optionals
+  default to null and nested blocks are guarded by `!= null` (was `length()`),
+  so `terraform validate` catches input drift.
+
 ### Fixed
 
-- **Strong-typed loosely (`type = any`) modules surfaced by real apply-testing:**
-  `net-router`, `net-security-policy` (full object schemas; omitted optionals
-  default to null so `terraform validate` now catches input drift).
 - **`net-vpn`** — dynamic (BGP/router) tunnels no longer set `local/remote_traffic_selector`
   (GCP rejects combining `router` with traffic selectors).
+- **`compute-mig`** — null-safety: health-check `enable_logging` guard
+  (`coalesce`, since `try()` returns null for a present-but-null field) and
+  autoscaler `scale_down/in_control` (`try()` when scaling control is unset).
+- **`cloudsql-instance`** — `random_password` `for_each` no longer filters on the
+  (sensitive) password value, which made the set sensitive → "Invalid for_each".
+- **`net-lb`** — hyphenated dotted forwarding-rule label values (GCP rejects `.`
+  in label values), completing the v1.0.1 label fix.
+- **Rewrote the stale `examples/` blueprints** (`compute-tls-lb-armor`,
+  `secured-data-tier`) to match current module schemas — they were never valid
+  (e.g. `rules`→`rule`, `http_health_check`→`health_check{protocol}`,
+  KMS key-ring reference, GCS `SetStorageClass`, storage/AR CMEK service-agent
+  grants). Apply-verified on a live project (compute-tls-lb-armor: 15 resources,
+  clean prune).
 
 ## [1.0.1] - 2026-06-11
 

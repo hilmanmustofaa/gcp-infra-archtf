@@ -113,6 +113,33 @@ jobs:
             tflint --init && tflint
           fi
 
+  # ── Job 2b: Validate E2E example blueprints ───────────────────────────────
+  # Blueprints compose modules; with strongly-typed module inputs, `validate`
+  # catches input-shape drift so examples cannot silently rot.
+  validate-examples:
+    name: "✅ Validate Examples"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Validate + fmt all examples
+        run: |
+          set -e
+          shopt -s nullglob
+          for d in examples/*/; do
+            [ -n "$(echo "$d"*.tf)" ] || continue
+            echo "• $d"
+            terraform -chdir="$d" init -backend=false -input=false >/dev/null
+            terraform -chdir="$d" validate
+            terraform fmt -check -diff "$d"
+          done
+
   # ── Job 3: Security Scan with SARIF Upload ─────────────────────────────────
   security-scan:
     name: "🔒 Security — ${{ matrix.module }}"
@@ -223,13 +250,14 @@ jobs:
   # ── Job 5: Summary Gate ────────────────────────────────────────────────────
   ci-gate:
     name: "🏁 CI Gate"
-    needs: [validate, security-scan, e2e-test]
+    needs: [validate, validate-examples, security-scan, e2e-test]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check Results
         run: |
           if [ "${{ needs.validate.result }}" = "failure" ] || \
+             [ "${{ needs.validate-examples.result }}" = "failure" ] || \
              [ "${{ needs.e2e-test.result }}" = "failure" ]; then
             echo "❌ CI failed. Check individual job logs."
             exit 1
