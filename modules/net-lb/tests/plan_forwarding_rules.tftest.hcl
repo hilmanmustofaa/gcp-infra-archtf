@@ -95,8 +95,8 @@ run "plan_forwarding_rules" {
         project                         = "test-project"
         affinity_cookie_ttl_sec         = null
         backend                         = []
-        circuit_breakers                = {}
-        consistent_hash                 = {}
+        circuit_breakers                = null
+        consistent_hash                 = null
         connection_draining_timeout_sec = null
         custom_request_headers          = null
         custom_response_headers         = null
@@ -105,7 +105,7 @@ run "plan_forwarding_rules" {
         health_checks                   = ["hc-1"]
         load_balancing_scheme           = null
         locality_lb_policy              = null
-        outlier_detection               = {}
+        outlier_detection               = null
         port_name                       = null
         protocol                        = null
         security_policy                 = null
