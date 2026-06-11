@@ -1,3 +1,5 @@
+mock_provider "google" {}
+
 variables {
   project_id = "dummy-project"
 
