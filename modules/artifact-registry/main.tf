@@ -4,11 +4,11 @@ locals {
   # https://cloud.google.com/asset-inventory/docs/asset-types
   #
   # Artifact Registry repository:
-  #   - gcp_asset_type = artifactregistry.googleapis.com/Repository
-  #   - gcp_service    = artifactregistry.googleapis.com
+  #   - gcp_asset_type = artifactregistry-googleapis-com--repository
+  #   - gcp_service    = artifactregistry-googleapis-com
   finops_module_labels_default = {
-    gcp_asset_type = "artifactregistry.googleapis.com/Repository"
-    gcp_service    = "artifactregistry.googleapis.com"
+    gcp_asset_type = "artifactregistry-googleapis-com--repository"
+    gcp_service    = "artifactregistry-googleapis-com"
 
     tf_module   = "artifact-registry"
     tf_layer    = "artifact"

@@ -1,8 +1,8 @@
 locals {
   # ===== FinOps labels. =====
   finops_labels_default = {
-    gcp_asset_type = "dns.googleapis.com/ManagedZone"
-    gcp_service    = "dns.googleapis.com"
+    gcp_asset_type = "dns-googleapis-com--managedzone"
+    gcp_service    = "dns-googleapis-com"
     tf_module      = "dns"
     tf_layer       = "networking"
     tf_resource    = "managed-zone"

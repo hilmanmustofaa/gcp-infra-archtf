@@ -35,8 +35,8 @@ locals {
 
   # ===== FinOps labels. =====
   finops_labels_default = {
-    gcp_asset_type = "container.googleapis.com/Cluster"
-    gcp_service    = "container.googleapis.com"
+    gcp_asset_type = "container-googleapis-com--cluster"
+    gcp_service    = "container-googleapis-com"
     tf_module      = "gke-cluster"
     tf_layer       = "compute"
     tf_resource    = "cluster"
