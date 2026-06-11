@@ -22,7 +22,7 @@ resource "google_compute_backend_service" "compute_backend_services" {
     }
   }
   dynamic "circuit_breakers" {
-    for_each = length(each.value.circuit_breakers) > 0 && each.value.load_balancing_scheme == "INTERNAL_MANAGED" && (each.value.protocol == "HTTP" || each.value.protocol == "HTTPS" || each.value.protocol == "HTTP2") ? { "circuit_breakers" = each.value.circuit_breakers } : {}
+    for_each = each.value.circuit_breakers != null && each.value.load_balancing_scheme == "INTERNAL_MANAGED" && (each.value.protocol == "HTTP" || each.value.protocol == "HTTPS" || each.value.protocol == "HTTP2") ? { "circuit_breakers" = each.value.circuit_breakers } : {}
 
     content {
       connect_timeout {
@@ -37,7 +37,7 @@ resource "google_compute_backend_service" "compute_backend_services" {
     }
   }
   dynamic "consistent_hash" {
-    for_each = length(each.value.consistent_hash) > 0 && each.value.load_balancing_scheme == "INTERNAL_MANAGED" && (each.value.protocol == "HTTP" || each.value.protocol == "HTTPS" || each.value.protocol == "HTTP2") ? { "consistent_hash" = each.value.consistent_hash } : {}
+    for_each = each.value.consistent_hash != null && each.value.load_balancing_scheme == "INTERNAL_MANAGED" && (each.value.protocol == "HTTP" || each.value.protocol == "HTTPS" || each.value.protocol == "HTTP2") ? { "consistent_hash" = each.value.consistent_hash } : {}
 
     content {
       http_cookie {
@@ -61,7 +61,7 @@ resource "google_compute_backend_service" "compute_backend_services" {
   load_balancing_scheme           = each.value.load_balancing_scheme
   locality_lb_policy              = each.value.locality_lb_policy
   dynamic "outlier_detection" {
-    for_each = length(each.value.outlier_detection) > 0 && each.value.load_balancing_scheme == "INTERNAL_MANAGED" && (each.value.protocol == "HTTP" || each.value.protocol == "HTTPS" || each.value.protocol == "HTTP2") ? { "outlier_detection" = each.value.outlier_detection } : {}
+    for_each = each.value.outlier_detection != null && each.value.load_balancing_scheme == "INTERNAL_MANAGED" && (each.value.protocol == "HTTP" || each.value.protocol == "HTTPS" || each.value.protocol == "HTTP2") ? { "outlier_detection" = each.value.outlier_detection } : {}
 
     content {
       base_ejection_time {
@@ -87,7 +87,7 @@ resource "google_compute_backend_service" "compute_backend_services" {
   protocol        = each.value.protocol
   security_policy = each.value.security_policy
   dynamic "security_settings" {
-    for_each = each.value.security_settings.client_tls_policy != null ? { "security_settings" = each.value.security_settings } : {}
+    for_each = try(each.value.security_settings.client_tls_policy, null) != null ? { "security_settings" = each.value.security_settings } : {}
 
     content {
       client_tls_policy = security_settings.value.client_tls_policy
@@ -97,7 +97,7 @@ resource "google_compute_backend_service" "compute_backend_services" {
   session_affinity = each.value.session_affinity
   timeout_sec      = each.value.timeout_sec
   dynamic "log_config" {
-    for_each = each.value.log_config.enable ? { "log_config" = each.value.log_config } : {}
+    for_each = try(each.value.log_config.enable, false) ? { "log_config" = each.value.log_config } : {}
 
     content {
       enable      = log_config.value.enable
