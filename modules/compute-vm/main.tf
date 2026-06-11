@@ -159,7 +159,10 @@ resource "google_compute_instance" "compute_instances" {
         ),
         null
       )
-    }
+    },
+    # Windows first-class: only inject keys when scripts are provided.
+    each.value.windows_startup_script != null ? { "sysprep-specialize-script-ps1" = each.value.windows_startup_script } : {},
+    each.value.windows_shutdown_script != null ? { "windows-shutdown-script-ps1" = each.value.windows_shutdown_script } : {},
   )
 
   project = coalesce(each.value.project, var.project_id)
@@ -257,7 +260,10 @@ resource "google_compute_instance_template" "compute_instance_templates" {
         ),
         null
       )
-    }
+    },
+    # Windows first-class: only inject keys when scripts are provided.
+    each.value.windows_startup_script != null ? { "sysprep-specialize-script-ps1" = each.value.windows_startup_script } : {},
+    each.value.windows_shutdown_script != null ? { "windows-shutdown-script-ps1" = each.value.windows_shutdown_script } : {},
   )
 
   metadata_startup_script = each.value.metadata_startup_script != null ? templatefile(

@@ -71,20 +71,20 @@ run "plan_finops_labels" {
 
   assert {
     condition = (
-      output.compute_instances["vm1"].labels.gcp_asset_type == "compute.googleapis.com/Instance" &&
+      output.compute_instances["vm1"].labels.gcp_asset_type == "compute-googleapis-com--instance" &&
       output.compute_instances["vm1"].labels.tf_resource == "instance" &&
       output.compute_instances["vm1"].labels.tf_module == "compute-vm" &&
-      output.compute_instances["vm1"].labels.gcp_service == "compute.googleapis.com"
+      output.compute_instances["vm1"].labels.gcp_service == "compute-googleapis-com"
     )
     error_message = "Instance labels are incorrect"
   }
 
   assert {
     condition = (
-      output.compute_disks["boot"].labels.gcp_asset_type == "compute.googleapis.com/Disk" &&
+      output.compute_disks["boot"].labels.gcp_asset_type == "compute-googleapis-com--disk" &&
       output.compute_disks["boot"].labels.tf_resource == "disk" &&
       output.compute_disks["boot"].labels.tf_module == "compute-vm" &&
-      output.compute_disks["boot"].labels.gcp_service == "compute.googleapis.com"
+      output.compute_disks["boot"].labels.gcp_service == "compute-googleapis-com"
     )
     error_message = "Disk labels are incorrect"
   }

@@ -1,8 +1,8 @@
 locals {
   # ===== FinOps labels. =====
   finops_labels_default = {
-    gcp_asset_type = "storage.googleapis.com/Bucket"
-    gcp_service    = "storage.googleapis.com"
+    gcp_asset_type = "storage-googleapis-com--bucket"
+    gcp_service    = "storage-googleapis-com"
     tf_module      = "gcs-bucket"
     tf_layer       = "storage"
     tf_resource    = "bucket"
@@ -36,9 +36,10 @@ resource "google_storage_bucket" "storage_buckets" {
   }
 
   dynamic "autoclass" {
-    for_each = try(each.value.autoclass, null) != null ? [""] : []
+    for_each = each.value.autoclass != null ? [each.value.autoclass] : []
     content {
-      enabled = each.value.autoclass
+      enabled                = autoclass.value.enabled
+      terminal_storage_class = autoclass.value.terminal_storage_class
     }
   }
 

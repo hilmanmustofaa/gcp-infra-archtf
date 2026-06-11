@@ -58,7 +58,10 @@ variable "storage_buckets" {
       enabled = optional(bool, false)
     }), {})
 
-    autoclass = optional(bool)
+    autoclass = optional(object({
+      enabled                = bool
+      terminal_storage_class = optional(string)
+    }))
 
     encryption = optional(object({
       kms_key_name = string
@@ -102,4 +105,24 @@ variable "storage_buckets" {
     custom_placement_config = optional(list(string))
   }))
   default = {}
+
+  # Autoclass and lifecycle_rules are mutually exclusive on the same bucket
+  # (GCP hard constraint: Autoclass manages transitions, so manual lifecycle
+  # storage-class rules cannot coexist).
+  validation {
+    condition = alltrue([
+      for k, v in var.storage_buckets :
+      !(try(v.autoclass.enabled, false) && length(coalesce(v.lifecycle_rules, {})) > 0)
+    ])
+    error_message = "A bucket cannot enable autoclass and define lifecycle_rules at the same time (GCP hard constraint)."
+  }
+
+  # Autoclass terminal_storage_class, when set, must be NEARLINE or ARCHIVE.
+  validation {
+    condition = alltrue([
+      for k, v in var.storage_buckets :
+      try(v.autoclass.terminal_storage_class, null) == null ? true : contains(["NEARLINE", "ARCHIVE"], v.autoclass.terminal_storage_class)
+    ])
+    error_message = "autoclass.terminal_storage_class must be either NEARLINE or ARCHIVE."
+  }
 }

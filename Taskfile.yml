@@ -139,7 +139,216 @@ tasks:
       - task: test
       - echo "✅ All checks completed successfully"
 
+  scaffold:module:
+    desc: "Scaffold a new module skeleton: task scaffold:module MODULE=<name>"
+    cmds:
+      - |
+        MODULE='{{.MODULE}}'
+        if [ -z "$MODULE" ]; then
+          echo "❌ Usage: task scaffold:module MODULE=<name>"
+          exit 1
+        fi
+        DIR="{{.MODULES_DIR}}/$MODULE"
+        if [ -d "$DIR" ]; then
+          echo "❌ Module $DIR already exists — refusing to overwrite."
+          exit 1
+        fi
+        echo "🏗️  Scaffolding $DIR ..."
+        mkdir -p "$DIR/examples/basic" "$DIR/tests"
+
+        cat > "$DIR/versions.tf" <<'EOF'
+        terraform {
+          required_version = ">= 1.3.0"
+          required_providers {
+            google = {
+              source  = "hashicorp/google"
+              version = ">= 6.13.9, < 7.0.0"
+            }
+            google-beta = {
+              source  = "hashicorp/google-beta"
+              version = ">= 6.13.9, < 7.0.0"
+            }
+          }
+        }
+        EOF
+
+        cat > "$DIR/variables.tf" <<'EOF'
+        variable "project_id" {
+          description = "The project ID to deploy resources into."
+          type        = string
+        }
+
+        variable "resource_prefix" {
+          description = "Optional prefix applied to resource names."
+          type        = string
+          default     = null
+        }
+
+        variable "join_separator" {
+          description = "Separator used when joining prefix with resource names."
+          type        = string
+          default     = "-"
+        }
+
+        variable "default_labels" {
+          description = "Default labels applied to all resources. Must include 'env', 'project', and 'owner' for FinOps governance."
+          type        = map(string)
+
+          validation {
+            condition = alltrue([
+              contains(keys(var.default_labels), "env"),
+              contains(keys(var.default_labels), "project"),
+              contains(keys(var.default_labels), "owner"),
+            ])
+            error_message = "Labels must include 'env', 'project', and 'owner' keys for FinOps compliance."
+          }
+        }
+        EOF
+
+        cat > "$DIR/main.tf" <<EOF
+        locals {
+          # ===== FinOps labels. =====
+          # Refer to Cloud Asset Inventory asset types:
+          # https://cloud.google.com/asset-inventory/docs/asset-types
+          finops_labels_default = {
+            gcp_asset_type = "TODO-asset-type"
+            gcp_service    = "TODO-service"
+            tf_module      = "$MODULE"
+            tf_layer       = "TODO-layer"
+            tf_resource    = "TODO-resource"
+          }
+
+          finops_labels = merge(
+            local.finops_labels_default,
+            var.default_labels,
+          )
+        }
+
+        # TODO: implement resources for the $MODULE module.
+        EOF
+
+        cat > "$DIR/outputs.tf" <<'EOF'
+        output "finops_labels" {
+          description = "FinOps label package for this module, to be merged with workspace-level defaults."
+          value       = local.finops_labels
+        }
+        EOF
+
+        cat > "$DIR/README.md" <<EOF
+        # $MODULE
+
+        TODO: module description. Run \`task docs\` to regenerate the variables/outputs tables.
+        EOF
+
+        cat > "$DIR/examples/basic/main.tf" <<'EOF'
+        terraform {
+          required_version = ">= 1.10.2"
+
+          required_providers {
+            google = {
+              source  = "hashicorp/google"
+              version = ">= 6.50.0"
+            }
+          }
+        }
+
+        provider "google" {
+          project = var.project_id
+          region  = "asia-southeast2"
+        }
+
+        variable "project_id" {
+          description = "The project ID to deploy resources into."
+          type        = string
+        }
+
+        module "this" {
+          source = "../../"
+
+          project_id      = var.project_id
+          resource_prefix = "demo"
+          join_separator  = "-"
+
+          default_labels = {
+            env     = "dev"
+            project = "demo"
+            owner   = "platform"
+          }
+        }
+        EOF
+
+        cat > "$DIR/tests/plan_basic.tftest.hcl" <<'EOF'
+        variables {
+          project_id = "dummy-project"
+
+          default_labels = {
+            env     = "test"
+            project = "demo"
+            owner   = "platform"
+          }
+        }
+
+        run "plan_basic" {
+          command = plan
+
+          assert {
+            condition     = output.finops_labels["env"] == "test"
+            error_message = "FinOps default_labels must propagate into finops_labels."
+          }
+        }
+        EOF
+
+        terraform fmt "$DIR" >/dev/null
+        echo "✅ Scaffolded $DIR (versions, variables, outputs, main, README, examples/basic, tests/plan_basic)."
+        echo "   Next: implement main.tf, then task fmt && task validate && task test"
+
+  e2e:toylabs:
+    desc: "Real apply+destroy e2e scenarios against project toylabs (SCENARIO=<name> optional)"
+    cmds:
+      - |
+        PROJECT="${E2E_PROJECT:-toylabs}"
+        SCEN='{{.SCENARIO}}'
+        if [ -n "$SCEN" ]; then
+          DIRS="e2e/$SCEN"
+        else
+          DIRS=$(find e2e -mindepth 1 -maxdepth 1 -type d | sort)
+        fi
+        RC=0
+        for D in $DIRS; do
+          [ -f "$D/main.tf" ] || continue
+          echo "🚀 e2e apply: $D (project=$PROJECT)"
+          terraform -chdir="$D" init -input=false >/dev/null
+          if terraform -chdir="$D" apply -auto-approve -input=false -var project_id="$PROJECT"; then
+            APPLY_OK=1
+          else
+            APPLY_OK=0; RC=1
+            echo "❌ apply failed: $D"
+          fi
+          # Destroy ALWAYS runs after an apply attempt — this is the core of the
+          # destroy strategy. Strays (if any) are caught by 'task e2e:destroy'.
+          echo "🧹 e2e destroy: $D"
+          terraform -chdir="$D" destroy -auto-approve -input=false -var project_id="$PROJECT" || {
+            echo "⚠️  destroy failed for $D — run 'task e2e:destroy' to retry"; RC=1
+          }
+        done
+        [ "$RC" -eq 0 ] && echo "✅ e2e complete (applied + destroyed)" || { echo "❌ e2e had failures"; exit 1; }
+
+  e2e:destroy:
+    desc: "Fallback: force-destroy any leftover e2e scenario state"
+    cmds:
+      - |
+        PROJECT="${E2E_PROJECT:-toylabs}"
+        for D in $(find e2e -mindepth 1 -maxdepth 1 -type d | sort); do
+          if [ -d "$D/.terraform" ] || [ -f "$D/terraform.tfstate" ]; then
+            echo "🧹 destroy $D"
+            terraform -chdir="$D" destroy -auto-approve -input=false -var project_id="$PROJECT" || true
+          fi
+        done
+        echo "✅ e2e cleanup complete"
+
   clean:
     desc: "Clean up generated files"
     cmds:
       - rm -rf .venv publish_tmp .tflint.d results.sarif
+      - find e2e -type d -name '.terraform' -prune -exec rm -rf {} + 2>/dev/null || true
+      - find e2e -type f \( -name 'terraform.tfstate*' -o -name '.terraform.lock.hcl' \) -delete 2>/dev/null || true

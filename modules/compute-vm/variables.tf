@@ -97,6 +97,10 @@ variable "compute_instance_templates" {
     }))
 
     enable_display = optional(bool, false)
+
+    # Windows first-class support (see compute_instances for key mapping).
+    windows_startup_script  = optional(string)
+    windows_shutdown_script = optional(string)
   }))
   default = {}
 }
@@ -166,6 +170,13 @@ variable "compute_instances" {
 
     enable_display    = optional(bool, false)
     resource_policies = optional(list(string), [])
+
+    # Windows first-class support. PowerShell scripts are merged into the
+    # metadata map as the Windows-specific keys consumed by the guest agent:
+    #   windows_startup_script  -> sysprep-specialize-script-ps1 (runs at specialize)
+    #   windows_shutdown_script -> windows-shutdown-script-ps1
+    windows_startup_script  = optional(string)
+    windows_shutdown_script = optional(string)
   }))
   default = {}
 }
