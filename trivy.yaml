@@ -1,0 +1,17 @@
+# Trivy configuration — IaC misconfiguration scanning for Terraform modules.
+# Successor to the (EOL) tfsec setup. See https://trivy.dev
+scan:
+  scanners:
+    - misconfig
+  # Example dirs hold intentionally-illustrative configs; scan module roots only.
+  skip-dirs:
+    - "**/examples/**"
+    - "**/.terraform/**"
+
+severity:
+  - HIGH
+  - CRITICAL
+
+misconfiguration:
+  terraform:
+    exclude-downloaded-modules: true

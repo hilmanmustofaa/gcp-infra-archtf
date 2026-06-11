@@ -173,7 +173,7 @@ module "gke" {
 | [Terraform](https://www.terraform.io/)                | `>= 1.3.0` |
 | [Task](https://taskfile.dev/)                         | `3.x`      |
 | [TFLint](https://github.com/terraform-linters/tflint) | `latest`   |
-| [tfsec](https://aquasecurity.github.io/tfsec/)        | `latest`   |
+| [Trivy](https://trivy.dev/)                           | `latest`   |
 | Python                                                | `3.9+`     |
 
 ### Task Commands
@@ -186,7 +186,7 @@ task check
 task fmt            # Check Terraform formatting
 task validate       # Validate all modules
 task lint           # Run TFLint
-task security       # Run tfsec with SARIF output
+task security       # Run Trivy IaC misconfig scan (HIGH/CRITICAL)
 task test           # Run all .tftest.hcl tests
 task test:changed   # Run tests on changed modules only
 task docs           # Generate READMEs via tfdoc.py
@@ -199,7 +199,7 @@ This repo ships with a **Dynamic Matrix** GitHub Actions workflow (`.github/work
 
 1. **🔍 Discovers** changed modules on PR (all modules on push to `main`)
 2. **✅ Validates** each module in parallel (init → validate → fmt → tflint)
-3. **🔒 Scans** each module with tfsec and uploads SARIF to GitHub Security tab
+3. **🔒 Scans** each module with Trivy and uploads SARIF to GitHub Security tab
 4. **🧪 Tests** each module's `.tftest.hcl` with optional WIF authentication
 5. **🧹 Cleans up** via `always()` hook — ensures `terraform destroy` runs even on failure
 

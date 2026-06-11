@@ -44,16 +44,25 @@ tasks:
         done
 
   security:
-    desc: "Run tfsec security scan with SARIF output"
+    desc: "Run Trivy IaC misconfiguration scan (HIGH/CRITICAL)"
     cmds:
       - |
-        echo "🔒 Running tfsec..."
-        tfsec {{.MODULES_DIR}}/ \
-          --config-file=tfsec.yaml \
-          --soft-fail \
-          --format=sarif \
-          --out=results.sarif || true
-        echo "📄 SARIF output: results.sarif"
+        echo "🔒 Running Trivy config scan..."
+        # Soft by default: trivy config exits 0 on findings unless --exit-code is set.
+        # Use 'task security:strict' to fail on HIGH/CRITICAL.
+        trivy config {{.MODULES_DIR}}/ \
+          --misconfig-scanners terraform \
+          --severity HIGH,CRITICAL
+
+  security:strict:
+    desc: "Trivy scan that FAILS on any HIGH/CRITICAL finding (enforcement gate)"
+    cmds:
+      - |
+        echo "🔒 Running Trivy config scan (strict)..."
+        trivy config {{.MODULES_DIR}}/ \
+          --misconfig-scanners terraform \
+          --severity HIGH,CRITICAL \
+          --exit-code 1
 
   test:
     desc: "Run terraform test for ALL modules"

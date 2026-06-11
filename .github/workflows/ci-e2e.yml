@@ -128,29 +128,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run tfsec (Manual)
+      # Trivy (maintained successor to the EOL tfsec). Soft-fail by policy:
+      # report findings to the Security tab, don't block the gate. Switch to
+      # enforcement later by adding a job that runs `trivy ... --exit-code 1`.
+      - name: Trivy IaC misconfig scan (SARIF)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: ${{ matrix.module }}
+          format: sarif
+          output: results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          trivy-config: trivy.yaml
+
+      - name: Ensure SARIF exists
+        if: always()
         shell: bash
         run: |
-          # tfsec is EOL/archived, so its install can be flaky. Never let an
-          # install/scan hiccup fail the job (tfsec is soft-fail by policy; the
-          # enforced gate is `task security` locally). Always emit a VALID SARIF
-          # so the upload step succeeds.
-          set +e
-          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
-          if command -v tfsec >/dev/null 2>&1; then
-            tfsec "${{ matrix.module }}" --format sarif --soft-fail --config-file tfsec.yaml > results.sarif
-          fi
           if [ ! -s results.sarif ]; then
-            echo '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"tfsec","informationUri":"https://github.com/aquasecurity/tfsec","rules":[]}},"results":[]}]}' > results.sarif
+            echo '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"trivy","informationUri":"https://github.com/aquasecurity/trivy","rules":[]}},"results":[]}]}' > results.sarif
           fi
-          exit 0
 
       - name: Upload SARIF to GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
-          category: tfsec-${{ matrix.module }}
+          category: trivy-${{ matrix.module }}
 
   # ── Job 4: E2E Tests with WIF Auth ────────────────────────────────────────
   e2e-test:
