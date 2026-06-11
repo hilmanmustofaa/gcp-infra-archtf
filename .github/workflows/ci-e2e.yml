@@ -132,7 +132,7 @@ jobs:
       # report findings to the Security tab, don't block the gate. Switch to
       # enforcement later by adding a job that runs `trivy ... --exit-code 1`.
       - name: Trivy IaC misconfig scan (SARIF)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: config
           scan-ref: ${{ matrix.module }}

@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Security scanning migrated from tfsec (EOL) to [Trivy](https://trivy.dev).**
+  CI uses the maintained `aquasecurity/trivy-action` (config scan) → SARIF →
+  GitHub Security; `task security` runs `trivy config` (HIGH/CRITICAL, soft),
+  with `task security:strict` to enforce. `trivy.yaml` + `.trivyignore` replace
+  `tfsec.yaml`. Trivy surfaced one real HIGH (`GCP-0057`, GKE node-metadata
+  exposure) that the previous tfsec config missed — left visible for triage.
+
 ## [1.0.1] - 2026-06-11
 
 ### Fixed
