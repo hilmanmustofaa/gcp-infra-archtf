@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`gke-cluster`** — `deletion_protection` variable (default `true`); the cluster
+  resource previously had no control over it, so clusters couldn't be
+  terraform-destroyed.
+- **All apply-able `examples/` blueprints are now real-apply verified on a live
+  project** (apply → destroy, zero strays): secured-artifact-registry,
+  hybrid-cloud-vpn, compute-tls-lb-armor, secured-data-tier, serverless-modern-app,
+  gke-with-nodepools. (The two `organization` blueprints are validate-only.)
+
+### Fixed
+
+- **`gke-nodepool`** — set `initial_node_count` only with autoscaling and
+  `node_count` only without (GCP rejects setting both).
+- **`serverless-modern-app` / `gke-with-nodepools`** blueprints rewritten to match
+  module schemas + real GCP requirements (VPC connector instance bounds, Secret
+  Manager version for Cloud Run, Workload Identity for the GKE metadata server,
+  Cloud SQL network-lookup key, deletion_protection, run-scoped names).
+
 ### Changed
 
 - **Security scanning migrated from tfsec (EOL) to [Trivy](https://trivy.dev).**
