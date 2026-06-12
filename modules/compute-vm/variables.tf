@@ -298,8 +298,12 @@ variable "templatefiles" {
 
 variable "tls_private_keys" {
   description = "Map of TLS private keys to be created and used in the module."
-  type        = map(any)
-  default     = {}
+  type = map(object({
+    algorithm   = string
+    rsa_bits    = optional(number)
+    ecdsa_curve = optional(string)
+  }))
+  default = {}
 }
 
 variable "zone" {

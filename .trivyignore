@@ -1,6 +1,10 @@
 # Trivy ignore file — accepted IaC findings, by AVD/Trivy check ID.
 # Add IDs here ONLY with a justification comment. Prefer fixing over ignoring.
-# Example:
-#   AVD-GCP-0066   # bucket logging is opt-in per workspace policy
-#
-# (No global ignores yet — review `task security` output and triage here.)
+
+# GCP-0057 (GKE node metadata exposure) on gke-cluster/gke-autopilot:
+# false-positive on dead config. The default node pool is removed
+# (remove_default_node_pool = true), and real nodes come from the gke-nodepool
+# module which defaults workload_metadata_config mode = GKE_METADATA. The cluster
+# node_config also sets GKE_METADATA when Workload Identity is enabled; Trivy
+# can't evaluate the dynamic block statically.
+AVD-GCP-0057
