@@ -69,7 +69,7 @@ These blueprints demonstrate production-ready architectures by combining multipl
 
 ---
 
-## Module Catalog — 30 Production Modules
+## Module Catalog — 37 Production Modules
 
 ### Compute
 
@@ -105,14 +105,18 @@ These blueprints demonstrate production-ready architectures by combining multipl
 | [`gcs`](./modules/gcs)                             | Cloud Storage buckets with lifecycle policies |
 | [`cloudsql-instance`](./modules/cloudsql-instance) | Cloud SQL instances (MySQL/PostgreSQL)        |
 | [`firestore`](./modules/firestore)                 | Firestore database and indexes                |
+| [`bq-dataset`](./modules/bq-dataset)               | BigQuery datasets with CMEK, expirations, and IAM |
 
 ### Security & IAM
 
-| Module                                                   | Description                                |
-| -------------------------------------------------------- | ------------------------------------------ |
-| [`iam-service-accounts`](./modules/iam-service-accounts) | Service account creation with IAM bindings |
-| [`kms`](./modules/kms)                                   | Cloud KMS key rings and crypto keys        |
-| [`organization`](./modules/organization)                 | Org policies, tags, logging, and IAM       |
+| Module                                                   | Description                                          |
+| -------------------------------------------------------- | --------------------------------------------------- |
+| [`iam-service-accounts`](./modules/iam-service-accounts) | Service account creation with IAM bindings          |
+| [`kms`](./modules/kms)                                   | Cloud KMS key rings and crypto keys                 |
+| [`organization`](./modules/organization)                 | Org policies, tags, logging, and IAM                |
+| [`secret-manager`](./modules/secret-manager)             | Secret Manager secrets, versions, IAM, and rotation |
+| [`net-iap`](./modules/net-iap)                           | Identity-Aware Proxy tunnel/web access bindings      |
+| [`vpc-service-controls`](./modules/vpc-service-controls) | VPC-SC access levels and service perimeters (data-exfil control) |
 
 ### Platform Services
 
@@ -125,6 +129,14 @@ These blueprints demonstrate production-ready architectures by combining multipl
 | [`dns`](./modules/dns)                                 | Cloud DNS zones and record sets                |
 | [`dns-response-policy`](./modules/dns-response-policy) | DNS Response Policies                          |
 | [`ssl-certificate`](./modules/ssl-certificate)         | Managed SSL certificates                       |
+
+### Observability & Messaging
+
+| Module                                       | Description                                                  |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| [`monitoring`](./modules/monitoring)         | Alert policies, uptime checks, and notification channels    |
+| [`logging-sink`](./modules/logging-sink)     | Centralized log export to BigQuery / GCS / Pub/Sub          |
+| [`pubsub-topic`](./modules/pubsub-topic)     | Pub/Sub topics and subscriptions with CMEK and dead-letter  |
 
 ---
 
