@@ -49,6 +49,7 @@ resource "google_container_cluster" "container_clusters" {
   name     = local.cluster_name
   location = local.location
 
+  deletion_protection       = var.deletion_protection
   description               = var.description
   min_master_version        = var.min_master_version
   default_max_pods_per_node = var.default_max_pods_per_node

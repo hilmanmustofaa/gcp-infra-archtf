@@ -86,6 +86,12 @@ module "gke_cluster" {
 
   node_service_account = module.node_sa.email
 
+  # Workload Identity — required for the node pools' GKE metadata server.
+  workload_pool = "${var.project_id}.svc.id.goog"
+
+  # e2e: allow clean teardown.
+  deletion_protection = false
+
   # Networking
   master_authorized_networks = var.master_authorized_networks
 
