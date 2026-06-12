@@ -74,6 +74,15 @@ resource "google_container_cluster" "container_clusters" {
     metadata = {
       disable-legacy-endpoints = "true"
     }
+    # Limit node metadata exposure (GCP-0057). GKE_METADATA requires Workload
+    # Identity; the default pool is removed anyway, real nodes come from
+    # gke-nodepool which defaults to GKE_METADATA.
+    dynamic "workload_metadata_config" {
+      for_each = var.workload_pool != null ? [1] : []
+      content {
+        mode = "GKE_METADATA"
+      }
+    }
   }
 
   network_policy {
