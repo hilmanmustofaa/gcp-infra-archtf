@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
+# Run-scoped suffix: Cloud SQL instance names are reserved ~1 week after
+# deletion, so e2e re-runs need a unique instance name.
+resource "random_id" "suffix" {
+  byte_length = 3
+}
+
+locals {
+  sfx = random_id.suffix.hex
+}
+
 # ------------------------------------------------------------------------------
 # 1. Networking (VPC + PSA + Connector)
 # ------------------------------------------------------------------------------
@@ -64,6 +74,8 @@ resource "google_vpc_access_connector" "connector" {
   region        = var.region
   ip_cidr_range = "10.8.0.0/28"
   network       = module.vpc.networks["serverless-vpc"].id
+  min_instances = 2
+  max_instances = 3
 }
 
 # ------------------------------------------------------------------------------
@@ -80,6 +92,17 @@ resource "google_secret_manager_secret" "db_password" {
   labels = var.default_labels
 }
 
+resource "random_password" "db" {
+  length  = 20
+  special = false
+}
+
+# The secret needs a version, or Cloud Run's secret_key_ref (latest) fails.
+resource "google_secret_manager_secret_version" "db_password" {
+  secret      = google_secret_manager_secret.db_password.id
+  secret_data = random_password.db.result
+}
+
 # ------------------------------------------------------------------------------
 # 3. Cloud SQL (Private IP)
 # ------------------------------------------------------------------------------
@@ -92,17 +115,18 @@ module "sql" {
 
   sql_database_instances = {
     "serverless-db" = {
-      name             = "serverless-db"
-      region           = var.region
-      database_version = "POSTGRES_15"
-      project          = var.project_id
+      name                = "serverless-db-${local.sfx}"
+      region              = var.region
+      database_version    = "POSTGRES_15"
+      project             = var.project_id
+      deletion_protection = false # e2e: allow clean teardown
 
       settings = {
         tier = "db-f1-micro"
 
         ip_configuration = {
           ipv4_enabled        = false
-          private_network     = module.vpc.networks["serverless-vpc"].id
+          private_network     = "serverless-vpc" # network_lookup key
           authorized_networks = {}
         }
 
@@ -171,6 +195,9 @@ module "cloud_run" {
   }
 
   labels = var.default_labels
+
+  # The secret version must exist before Cloud Run resolves secret_key_ref(latest).
+  depends_on = [google_secret_manager_secret_version.db_password]
 }
 
 # Grant Secret Access to Cloud Run SA

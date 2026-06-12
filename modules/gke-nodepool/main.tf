@@ -33,7 +33,9 @@ resource "google_container_node_pool" "container_node_pools" {
   cluster  = var.cluster_name
   version  = var.node_version
 
-  initial_node_count = var.node_count.initial
+  # GCP rejects setting both initial_node_count and node_count. Use
+  # initial_node_count only with autoscaling; otherwise use a fixed node_count.
+  initial_node_count = var.autoscaling != null ? var.node_count.initial : null
   node_count         = var.autoscaling == null ? var.node_count.current : null
   node_locations     = local.node_locations
 

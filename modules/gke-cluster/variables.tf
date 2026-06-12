@@ -266,3 +266,9 @@ variable "workload_pool" {
   type        = string
   default     = null
 }
+
+variable "deletion_protection" {
+  description = "If true, the cluster cannot be deleted via Terraform (GCP default). Set false for ephemeral/e2e clusters."
+  type        = bool
+  default     = true
+}
